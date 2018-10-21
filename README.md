@@ -339,4 +339,78 @@ puma -d
 ```gcloud
 gcloud compute firewall-rules create default-puma-server --allow tcp:9292 --source-ranges=0.0.0.0/0 --target-tags=puma-server
 ```
+### ДЗ5
+1. Установка packer
+2. Создане ADC
+```gcloud
+$ gcloud auth application-default login
+```
+3. Создание Pcker template
+- mkdir packer && touch packer/ubuntu16.json
+```json
+{
+    "builders": [
+        {
+           "type": "googlecompute",
+           "project_id": "infra-219415",
+           "image_name": "reddit-base-{{timestamp}}",
+           "image_family": "reddit-base",
+           "source_image_family": "ubuntu-1604-lts",
+           "zone": "europe-west1-b",
+           "ssh_username": "appuser",
+           "machine_type": "f1-micro"
+         }
+      ],
+      "provisioners": [
+              {
+                      "type": "shell",
+                      "inline":[
+                             "sudo apt update"
+                      ]
+              },
+              {
+              "type": "shell",
+              "script": "scripts/install_ruby.sh",
+              "execute_command": "sudo {{.Path}}"
+          },
+          {
+            "type": "shell",
+            "script": "scripts/install_mongodb.sh",
+            "execute_command": "sudo {{.Path}}"
+          }
+       ]
+}
+4. Скрипты для провижининга.
+- mkdir packer/scripts && cp config-script/install-* packer/scripts 
+5. Проверка на ошибки 
+```bash
+$ packer validate ./ubuntu16.json 
+```
+6. Packer build
+- запустить build образа
+```bash
+$ packer build ubuntu16.json
+```
+7. Проверить созданный образ
+- В браузерной консоле появился образ  ddit-base-1540144393
+e. Деплоим приложение 
+- Создаем машину из образа reddit-base-1540144393
+8. Подключаемся по ssh
+```bash
+$ ssh appuser@<instace_public_ip>
+```
+9. Установка зависимостей и запуск приложения.
+```bash
+$ git clone -b monolith https://github.com/express42/reddit.git
+$ cd reddit && bundle install
+$ puma -d
+```
+- Проверить что приложение запустилось
+```bash
+$ ps aux | grep puma
+```
+10. Проверка работы приложения
+```http
+http://instace_public_ip:9292
+```
 
