@@ -283,8 +283,8 @@ $ puma -d
 $ ps aux | grep puma
 appuser   9582  0.0  2.4 654684 42988  puma 3.10.0 (tcp://0.0.0.0:9292) [reddit]
 ```
-testapp_IP = 35.236.29.190
-testapp_IP = 9292 
+- testapp_IP = 35.236.29.190
+- testapp_IP = 9292 
 
 7. Открываем порт в файерволе  
 - create new firewall rule 
@@ -322,7 +322,7 @@ git clone -b monolith https://github.com/express42/reddit.git
 cd reddit && bundle install
 puma -d
 ```
-- перетать при установке
+- передать при установке
 ```gcloud
 --metadata-from-file startup-script=startup.sh 
 ```
