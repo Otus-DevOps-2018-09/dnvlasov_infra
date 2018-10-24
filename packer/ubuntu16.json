@@ -2,7 +2,12 @@
     "variables":{
 	"project_id": "variables.json",
 	"machine_type": "variables.json",
-	"source_image_family": "variable.json"
+	"source_image_family": "variables.json",
+	"networks": "variables.json",
+        "tags": "variables.json",
+        "disk_type": "variables.json",
+        "disk_size": "variables.json",
+        "image_description": "variables.json"
 	},	
     "builders": [
         {
@@ -13,7 +18,12 @@
            "source_image_family": "{{user `source_image_family`}}",
            "zone": "europe-west1-b",
            "ssh_username": "appuser",
-           "machine_type": "{{user `machine_type`}}"
+           "machine_type": "{{user `machine_type`}}",
+	   "network": "{{user `network`}}",
+           "tags": "{{user `tags`}}",
+           "disk_type": "{{user `disk_type`}}",
+           "disk_size": "{{user `disk_size`}}",
+           "image_description": "{{user `image_descriprion`}}"
          }
       ],
       "provisioners": [
@@ -26,6 +36,10 @@
             "type": "shell",
             "script": "scripts/install_mongodb.sh",
             "execute_command": "sudo {{.Path}}"
-	  }	
+	  },
+  	  {
+	   "type": "shell",
+	   "script": "scripts/deploy.sh"
+	  }
        ]
 }
