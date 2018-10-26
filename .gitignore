@@ -6,5 +6,4 @@ ubuntu16.json.bak
 *.tfvars
 .terraform/
 variables.tf
-variables.tf
 main.tf.bak
