@@ -23,7 +23,7 @@ metadata {
 connection {
  type = "ssh"
  user = "appuser"
- user = "appuser1"	
+ user = "appuser1"
  agent = false
  private_key = "${file(var.private_key)}"
  }
