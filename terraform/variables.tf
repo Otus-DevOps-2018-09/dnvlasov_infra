@@ -12,9 +12,9 @@ variable disk_image {
  description = "Disk image"
 }
 variable private_key {
- description = "Path to private kry"
+ description = "Path to private key"
 }
-variable name {
-description = "Resource"
-default = "app"
+variable zone  {
+description = "Zone"
+default = "europe-west1-b"
 }
