@@ -48,7 +48,6 @@ resource "google_compute_project_metadata" "ssh_keys" {
     metadata {
       ssh-keys = <<EOF
       appuser1:${var.public_key_path} appuser1
-      appuser2:${var.public_key_path} appuser2
       appuser3:${var.public_key_path} appuser3
 
 		
