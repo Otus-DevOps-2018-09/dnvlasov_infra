@@ -51,6 +51,7 @@ resource "google_compute_project_metadata" "app" {
       appuser1:${var.public_key_path} appuser1
       appuser3:${var.public_key_path} appuser3
 EOF
-    }
+  
+  }
   }
 
