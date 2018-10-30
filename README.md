@@ -958,3 +958,19 @@ connection {
 2. Определите input переменную для задания зоны в ресурсе
 "google_compute_instance" "app". У нее должно быть
 значение по умолчанию; 
+```
+main.tf
+zone = "${var.zone}
+```
+```
+variable.tf
+
+variable zone {
+        description = "Zone"
+}
+```
+```
+terraform.tfvars
+
+zone = "zone name"
+```
