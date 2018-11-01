@@ -1,0 +1,8 @@
+{
+	"appserver":{
+		"hosts":[""]
+		"vars":{
+			"a":true
+		}
+	},
+	"databases":
