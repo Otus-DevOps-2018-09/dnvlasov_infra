@@ -1128,3 +1128,219 @@ target_tags = ["reddit-db"]
 # порт будет доступен только для инстансов с тегом ... source_tags = ["reddit-app"]
 }
 ```
+
+Создадим файл vpc.tf в который вынесем правило
+фаервола для ssh доступа, которое применимо для
+всех инстансов нашей сети.
+```
+resource "google_compute_firewall" "firewall_ssh" { name = "default-allow-ssh"
+network = "default"
+allow {
+protocol = "tcp" ports = ["22"]
+}
+source_ranges = ["0.0.0.0/0"] }
+```
+В файле main.tf остаться только определение провайдера:
+```
+provider "google" {
+version = "1.4.0"
+project = "${var.project}" region = "${var.region}"
+}
+```
+Модули
+
+Разбиваем нашу конфигурацию на отдельные конфиг файлы.
+
+Внутри директории terraform создайте директорию modules, в которой мы будет определять модули.
+
+ DB module
+Внутри директории modules создайте директорию db, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf.
+Скопируем содержимое db.tf, который мы создали ранее, в modules/db/main.tf.
+Затем определим переменные, которые у нас используются в db.tf и объявляются в variables.tf в файл переменных модуля modules/db/variables.tf
+```
+
+variable public_key_path {
+description = "Path to the public key used to connect to instance"
+}
+variable zone { description = "Zone"
+}
+variable db_disk_image {
+description = "Disk image for reddit db" default = "reddit-db-base"
+```
+
+ App module
+
+ Создадим по аналогии модуль приложения: в директории modules создадим директорию app, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf.
+
+ Скопируем содержимое app.tf, который мы создали ранее, в modules/app/main.tf
+
+ Затем определим переменные, которые у нас
+используются в app.tf и объявляются в variables.tf в файл
+переменных модуля modules/app/variables.tf
+
+ ```
+variable public_key_path {
+description = "Path to the public key used to connect to instance"
+}
+variable zone { description = "Zone"
+}
+variable app_disk_image {
+description = "Disk image for reddit app" default = "reddit-app-base"
+}
+```
+Выходные переменные
+```
+modules/app/outputs.tf
+output "app_external_ip" {
+value = "${google_compute_instance.app.network_interface.0.access_config.
+0.assigned_nat_ip}"
+}
+```
+ Проверим работу модулей
+
+ В файл main.tf, где у нас определен провайдер вставим секции вызова созданных нами модулей
+
+  terraform/main.tf
+  ```
+...
+module "app" {
+Источник, откуда копировать модуль
+ source = "modules/app" public_key_path = "${var.public_key_path}" zone = "${var.zone}" app_disk_image = "${var.app_disk_image}"
+}
+module "db" {
+source = "modules/db" public_key_path = "${var.public_key_path}" zone = "${var.zone}"
+}
+db_disk_image
+```
+
+Используем команду для загрузки модулей. В директории terraform:
+```
+$ terraform get
+```
+Модули будут загружены в директорию `.terraform`, в
+которой уже содержится провайдер 
+
+ Получаем output переменные из модуля
+
+ В созданном нами модуле app мы определили выходную переменную для внешнего IP инстанса. Чтобы получить значение этой переменной, переопределим ее
+```
+output "app_external_ip" {
+value = "${module.app.app_external_ip}"
+}
+```
+ Самостоятельное задание
+
+ Аналогично предыдущим модулям создайте модуль vpc, в котором определите настройки файервола в рамках сети.
+Используйте созданный модуль в основной конфигурации terraform/main.tf
+
+
+```
+resource "google_compute_firewall" "firewall_ssh" {
+  name    = "default-allow-ssh"
+  network = "default"
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+  source_ranges = "${var.source_ranges}"
+}
+```
+
+ Теперь мы можем задавать диапазоны IP адресов для правила файервола при вызове модуля.
+terraform/main.tf
+```
+...
+module "vpc" {
+source = "modules/vpc"
+source_ranges = ["внешний ip"] }
+```
+ Самостоятельное задание
+Проверьте работу параметризованного в прошлом слайде модуля vpc.
+1. Введите в source_ranges не ваш IP адрес, примените правило и проверьте отсутствие соединения к обоим хостам по ssh. Проконтролируйте, как изменилось правило файрвола в веб консоли.
+ 
+ Нет доступа к хостам app и db в фильтрах   измениля ip адрес   
+
+2. Введите в source_ranges ваш IP адрес, примените правило и проверьте наличие соединения к обоим хостам по ssh.
+3. Верните 0.0.0.0/0 в source_ranges.
+
+ Переиспользование модулей
+
+  Создадим Stage & Prod
+
+  В директории terrafrom создайте две директории: stage и prod. Скопируйте файлы main.tf, variables.tf, outputs.tf, terraform.tfvars из директории terraform в каждую из созданных директорий. Поменяйте пути к модулям в main.tf на "../modules/xxx" вместо "modules/xxx".
+
+  Инфраструктура в обоих окружениях будет идентична, однако будет иметь небольшие различия: мы откроем SSH доступ для всех IP адресов в окружении Stage, а в окружении Prod откроем доступ только для своего IP.
+
+  terraform/stage/main.tf
+  ```
+provider "google" {
+  version = "1.4.0"
+  project = "${var.project}"
+  region  = "${var.region}"
+}
+module "app" {
+  source          = "../modules/app"
+  public_key_path = "${var.public_key_path}"
+  app_disk_image  = "${var.app_disk_image}"
+}
+module "db" {
+  source          = "../modules/db"
+  public_key_path = "${var.public_key_path}"
+  db_disk_image  = "${var.db_disk_image}"
+}
+module "vpc" {
+  source          = "../modules/vpc"
+  source_ranges = ["0.0.0.0/0"]
+}
+```
+ terraform/prod/main.tf
+```
+provider "google" {
+  version = "1.4.0"
+  project = "${var.project}"
+  region  = "${var.region}"
+}
+module "app" {
+  source          = "../modules/app"
+  public_key_path = "${var.public_key_path}"
+  app_disk_image  = "${var.app_disk_image}"
+}
+module "db" {
+  source          = "../modules/db"
+  public_key_path = "${var.public_key_path}"
+  db_disk_image  = "${var.db_disk_image}"
+}
+module "vpc" {
+  source          = "../modules/vpc"
+  source_ranges = ["82.155.222.156/32"]
+}
+```
+
+ Работа с реестром модулей.
+
+Давайте попробуем воспользоваться модулем storage-bucket
+для создания бакета в сервисе Storage.
+
+Создайте в папке terraform файл 
+```
+storage-bucket.tf с таким содержанием:
+ provider "google" { version = "1.4.0"
+project = "${var.project}" region = "${var.region}"
+}
+module "storage-bucket" {
+source = "SweetOps/storage-bucket/google"
+version = "0.1.1"
+name = ["storage-bucket-test", "storage-bucket-test2"]
+}
+output storage-bucket_url {
+value = "${module.storage-bucket.url}"
+}
+```
+ Работа с реестром модулей
+
+ Проверьте с помощью gsutil или веб консоли, что бакеты создались и доступны.
+```
+gsutil ls
+gs://prod-storage-bucket/
+gs://stage-storage-bucket/
+```
