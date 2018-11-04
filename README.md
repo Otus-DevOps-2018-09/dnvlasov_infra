@@ -974,3 +974,157 @@ terraform.tfvars
 
 zone = "zone name"
 ```
+### ДЗ №7
+ Определим ресурс файервола.
+ ```
+ resource "google_compute_firewall" "firewall_ssh" { name = "default-allow-ssh"
+ network = "default"
+ allow {
+ protocol = "tcp" ports = ["22"]
+ }
+ source_ranges = ["0.0.0.0/0"] }
+```
+ Выполним команду применения изменений:
+...
+* google_compute_firewall.firewall_ssh: 1 error(s) occurred:
+```
+ $ terraform apply
+ ```
+ google_compute_instance.app: Refreshing state... (ID: reddit-app)
+
+*google_compute_firewall.firewall_ssh: Error creating firewall: googleapi: Error 409:
+The resource 'projects/infra-179014/global/firewalls/default-allow-ssh' already exists,
+alreadyExists
+
+Правило firewall/default-allow-ssh уже существует.
+
+Импортируем существующую инфраструктуру в Terraform
+```
+$ terraform import google_compute_firewall.firewall_ssh default-allow-ssh
+ 
+google_compute_firewall.firewall_ssh: Importing from ID "default-allow-ssh"...
+google_compute_firewall.firewall_ssh: Import complete!
+Imported google_compute_firewall (ID: default-allow-ssh)
+google_compute_firewall.firewall_ssh: Refreshing state... (ID: default-allow-ssh)
+Import successful!
+```
+
+ Ресурс IP адреса
+
+ Зададим IP для инстанса с приложением в виде внешнего ресурса. Для этого определим ресурс google_compute_address в конфигурационном файле main.tf
+```
+resource "google_compute_address" "app_ip" { name = "reddit-app-ip"
+}
+```
+ Ссылаемся на атрибуты другого ресурса
+ Для того чтобы использовать созданный IP адрес в
+нашем ресурсе VM нам необходимо сослаться на
+атрибуты ресурса, который этот IP создает, внутри
+конфигурации ресурса VM. В конфигурации ресурса VM
+определите, IP адрес для создаваемого инстанса.
+```
+network_interface { network = "default" access_config = {
+nat_ip = "${google_compute_address.app_ip.address}" }
+     15
+}
+```
+Неявная зависимость.
+
+Ссылку в одном ресурсе на атрибуты другого тераформ понимает как зависимость одного ресурса от другого. Это влияет на очередность создания и удаления ресурсов при применении изменений.
+Вновь пересоздадим все ресурсы и посмотрим на очередность создания ресурсов сейчас
+```
+ $ terraform destroy
+ $ terraform plan
+ $ terraform apply
+ ```
+ ```
+google_compute_address.app_ip: Creating...
+google_compute_firewall.firewall_puma: Creating...
+google_compute_firewall.firewall_ssh: Creating...
+...
+google_compute_address.app_ip: Creation complete after 12s (ID: reddit-app-ip)
+google_compute_instance.app: Creating...
+```
+Видим, что ресурс VM начал создаваться только после завершения создания IP адреса в результате неявной зависимости этих ресурсов.
+
+ Структуризация ресурсов
+  Несколько VM
+
+  Вынесем БД на отдельный инстанс VM. Для этого необходимо в директории packer, где содержатся ваши шаблоны для билда VM, создать два новых шаблона db.json и app.json. При помощи шаблона db.json должен собираться образ VM, содержащий установленную MongoDB. Шаблон app.json должен использоваться для сборки образа VM, с установленными Ruby. В качестве базового образа для создания образа возьмем ubuntu16.04.
+
+  Создадим две VM
+
+  Разобьем конфиг main.tf на несколько конфигов. Создадим файл app.tf, куда вынесем конфигурацию для VM с приложением.
+
+Образ приложения. 
+
+  variables.tf:
+```
+variable app_disk_image {
+description = "Disk image for reddit app" default = "reddit-app-base"
+}
+```
+ app.tf
+```
+resource "google_compute_instance" "app" { name = "reddit-app"
+machine_type = "g1-small"
+zone = "${var.zone}"
+tags = ["reddit-app"] boot_disk {
+initialize_params {
+image = "${var.app_disk_image}"
+} }
+network_interface { network = "default" access_config = {
+nat_ip = "${google_compute_address.app_ip.address}" }
+}
+metadata {
+ssh-keys = "appuser:${file(var.public_key_path)}" }
+}
+```
+Добавим в app.tf определение правила фаервола для сервера приложения и создание IP адреса.
+```
+resource "google_compute_address" "app_ip" { name = "reddit-app-ip"
+}
+resource "google_compute_firewall" "firewall_puma" {
+name = "allow-puma-default" network = "default"
+allow {
+protocol = "tcp" ports = ["9292"]
+}
+source_ranges = ["0.0.0.0/0"] target_tags = ["reddit-app"]
+}
+```
+
+Объявить переменную в variables.tf
+```
+variable db_disk_image {
+description = "Disk image for reddit db" default = "reddit-db-base"
+}
+```
+Создадим файл db.tf, в котором определим ресурсы для запуска VM с БД.
+```
+resource "google_compute_instance" "db" { name = "reddit-db"
+machine_type = "g1-small"
+zone = "${var.zone}"
+tags = ["reddit-db"] boot_disk {
+initialize_params {
+image = "${var.db_disk_image}"
+} }
+network_interface { network = "default" access_config = {}
+}
+metadata {
+ssh-keys = "appuser:${file(var.public_key_path)}" }
+}
+```
+
+Добавим в db.tf правило файервола, которое даст доступ приложению к БД
+
+```
+resource "google_compute_firewall" "firewall_mongo" { name = "allow-mongo-default"
+network = "default"
+allow {
+protocol = "tcp" ports = ["27017"]
+}
+# правило применимо к инстансам с тегом ...
+target_tags = ["reddit-db"]
+# порт будет доступен только для инстансов с тегом ... source_tags = ["reddit-app"]
+}
+```
