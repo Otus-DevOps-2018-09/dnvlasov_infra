@@ -974,3 +974,199 @@ terraform.tfvars
 
 zone = "zone name"
 ```
+
+### ДЗ №7 
+Управление конфигурацией. Основные DevOps инструменты. Знакомство
+с Ansible
+
+Установка Ansible.
+```
+pip install -r requirements.txt
+```
+Проверяем, что Ansible установлен:
+```
+$ ansible --version
+ansible 2.4.x.x
+```
+Поднимим инфраструктуру, описанную в окружении stage
+```
+$ terraform apply
+
+app_external_ip = x.x.x.x
+db_external_ip = x.x.x.x
+```
+
+Создаем инвентори файл ansible/inventory
+```
+appserver ansible_host=35.195.186.154 ansible_user=appuser \
+ansible_private_key_file=~/.ssh/appuser
+```
+Проверяем что ansible управляет инстансом app
+```
+ansible appserver -i ./inventory -m ping
+appserver | SUCCESS => {
+"changed": false,
+"ping": "pong"
+}
+```
+и инстансом db
+```
+$ ansible dbserver -i inventory -m ping
+dbserver | SUCCESS => {
+"changed": false,
+"ping": "pong"
+}
+```
+Создадим конфигурационный ansible.cfg
+```
+[defaults]
+inventory = ./inventory
+remote_user = appuser
+private_key_file = ~/.ssh/appuser
+host_key_checking = False
+retry_files_enabled = False
+```   
+Уберем из файла inventory информацию о ssh содинении
+```
+appserver ansible_host=35.195.74.54
+dbserver ansible_host=35.195.162.174
+```
+Проверим работу
+```
+$ ansible dbserver -m command -a uptime
+dbserver | SUCCESS | rc=0 >>
+07:47:41 up 24 min, 1 user, load average: 0.00, 0.00, 0.03
+```
+
+Работа с групой хостов
+меняем файл inventory 
+```
+[app] 
+appserver ansible_host=35.195.74.54 
+[db]
+dbserver ansible_host=35.195.162.174
+```
+
+Проверяем работу
+```
+$ ansible app -m ping
+
+appserver | SUCCESS => {
+"changed": false,
+"ping": "pong"
+}
+```
+Использование YAML inventory
+создаем файл  inventory.yml
+```
+cp inventory inventory.yml
+```
+Проверяем что работает с ключем -i которой определяет путь к inventory файлу
+```
+$ ansible all -m ping -i inventory.yml
+dbserver | SUCCESS => {
+"changed": false,
+"ping": "pong"
+}
+appserver | SUCCESS => {
+"changed": false,
+"ping": "pong"
+}
+```
+Выполнение команд
+Проверим, что на app сервере установлены компоненты для
+работы приложения (ruby и bundler):
+```
+$ ansible app -m command -a 'ruby -v'
+appserver | SUCCESS | rc=0 >>
+ruby 2.3.1p112 (2016-04-26) [x86_64-linux-gnu]
+$ ansible app -m command -a 'bundler -v'
+appserver | SUCCESS | rc=0 >>
+Bundler version 1.11.2
+```
+Выполнение команд
+
+Проверим, что на app сервере установлены компоненты для
+работы приложения (ruby и bundler):
+
+Попробуем указать две команды модулю command:
+```
+ansible app -m command -a 'ruby -v; bundler -v' -i inventory.yml
+appserver | FAILED | rc=1 >>
+ruby: invalid option -;  (-h will show valid options) (RuntimeError)non-zero return code
+```
+
+```
+ ansible app -m shell -a 'ruby -v; bundler -v' -i inventory.yml
+appserver | CHANGED | rc=0 >>
+ruby 2.3.1p112 (2016-04-26) [x86_64-linux-gnu]
+Bundler version 1.11.2
+```
+Модуль shell успешно отработает:
+
+Проверим на хосте с БД статус сервиса MongoDB с помощью
+модуля command или shell
+```
+ansible db -m command -a 'systemctl status mongod' -i inventory.yml
+dbserver | CHANGED | rc=0 >>
+● mongod.service - High-performance, schema-free document-oriented database
+   Loaded: loaded (/lib/systemd/system/mongod.service; enabled; vendor preset: enabled)
+   Active: active (running) since Mon 2018-11-05 18:33:32 UTC; 18min ago
+     Docs: https://docs.mongodb.org/manual
+ Main PID: 1273 (mongod)
+    Tasks: 19
+   Memory: 52.3M
+      CPU: 6.673s
+   CGroup: /system.slice/mongod.service
+           └─1273 /usr/bin/mongod --quiet --config /etc/mongod.conf
+
+Nov 05 18:33:32 reddit-db systemd[1]: Started High-performance, schema-free document-oriented database.
+```
+Пробуем с systemd
+```
+ansible db -m systemd -a name=mongod -i inventory.yml
+dbserver | SUCCESS => {
+    "changed": false,
+    "name": "mongod",
+    "status": {
+        "ActiveEnterTimestamp": "Mon 2018-11-05 18:33:32 UTC",
+        "ActiveEnterTimestampMonotonic": "16141469",
+        "ActiveExitTimestampMonot,
+         "ActiveState": "active",
+...  
+```
+C помощью модуля service, который более
+универсален и будет работать и в более старых ОС с init.dинициализацией:
+```
+dnvlasov@resero:~/dnvlasov_infra/ansible$ ansible db -m service -a name=mongod -i inventory.yml
+dbserver | SUCCESS => {
+    "changed": false,
+    "name": "mongod",
+    "status": {
+        "ActiveEnterTimestamp": "Mon 2018-11-05 18:33:32 UTC",
+        "ActiveEnterTimestampMonotonic": "16141469",
+        "ActiveExitTimestampMonotonic": "0",
+        "ActiveState": "active",
+```
+Напишем простой плейбук
+```
+- name: Clone
+  hosts: app
+  tasks:
+  - name: Clone repo
+    git: repo: https://github.com/express42/reddit.git
+dest: /home/appuser/reddit
+```
+И выполним: ansible-playbook clone.yml
+```
+PLAY RECAP ***********************************************************************
+appserver : ok=2 changed=0 unreachable=0 failed=0
+```
+
+```
+ ansible app -m command -a 'rm -rf ~/reddit' -i inventory.yml
+ [WARNING]: Consider using the file module with state=absent rather than running rm.  If you need to use command because file is
+insufficient you can add warn=False to this command task or set command_warnings=False in ansible.cfg to get rid of this message.
+
+appserver | CHANGED | rc=0 >>
+```
