@@ -1,4 +1,3 @@
-#app external ip 35.233.73.196; db 35.195.70.208
 [app]
 appserver ansible_host=35.205.253.45 
 [db]
