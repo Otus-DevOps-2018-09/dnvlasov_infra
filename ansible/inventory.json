@@ -1,8 +1,30 @@
 {
-	"appserver":{
-		"hosts":[""]
-		"vars":{
-			"a":true
-		}
-	},
-	"databases":
+    "_meta": {
+        "hostvars": {
+            "appserver": {
+                "ansible_host": "35.205.253.45"
+            }, 
+            "dbserver": {
+                "ansible_host": "35.205.205.108"
+            }
+        }
+    }, 
+    "all": {
+        "children": [
+            "app", 
+            "db", 
+            "ungrouped"
+        ]
+    }, 
+    "app": {
+        "hosts": [
+            "appserver"
+        ]
+    }, 
+    "db": {
+        "hosts": [
+            "dbserver"
+        ]
+    }, 
+    "ungrouped": {}
+}
