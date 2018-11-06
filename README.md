@@ -1163,10 +1163,14 @@ PLAY RECAP *********************************************************************
 appserver : ok=2 changed=0 unreachable=0 failed=0
 ```
 
+Применем команду 
 ```
  ansible app -m command -a 'rm -rf ~/reddit' -i inventory.yml
- [WARNING]: Consider using the file module with state=absent rather than running rm.  If you need to use command because file is
-insufficient you can add warn=False to this command task or set command_warnings=False in ansible.cfg to get rid of this message.
-
-appserver | CHANGED | rc=0 >>
 ```
+Потом снова выполним ansible-playbook
+
+```
+PLAY RECAP ****************************************************************
+appserver                  : ok=2    changed=1    unreachable=0    failed=0   
+```
+Произошло измененние добавили  папку  /home/appuser/reddit
