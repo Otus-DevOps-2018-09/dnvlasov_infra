@@ -1,0 +1,10 @@
+variables.json
+ubuntu16.json.bak
+*.tfstate
+*.tfstate.*.backup
+*.tfstate.backup
+*.tfvars
+.terraform/
+variables.tf
+main.tf.bak
+old
