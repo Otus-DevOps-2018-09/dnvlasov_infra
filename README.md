@@ -1173,4 +1173,3 @@ appserver : ok=2 changed=0 unreachable=0 failed=0
 PLAY RECAP ****************************************************************
 appserver                  : ok=2    changed=1    unreachable=0    failed=0   
 ```
-Произошло измененние добавили  папку  /home/appuser/reddit
