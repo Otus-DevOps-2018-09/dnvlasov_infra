@@ -8,3 +8,4 @@ ubuntu16.json.bak
 variables.tf
 main.tf.bak
 old
+*.retry
