@@ -1504,3 +1504,223 @@ insufficient you can add warn=False to this command task or set command_warnings
 appserver | CHANGED | rc=0 >>
 
 ```
+
+
+### ДЗ №9
+Деплой и управление конфигурацией с Ansible.
+#### Плейбуки
+- Создание плейбука
+Создадим плейбук для управления конфигурацией
+и деплоя нашего приложения. Для этого создайте
+файл reddit_app.yml в директории ansible. 
+добавим в файл .gitignore следующую
+строку:  *.retry  
+- Сценарий для монго
+
+ansible/reddit_app.yml
+```
+---
+- name: Configure hosts & deploy application
+ hosts: all
+ tasks:
+ - name: Change mongo config file
+ become: true
+ template:
+ src: templates/mongod.conf.j2
+ dest: /etc/mongod.conf
+ mode: 0644
+ tags: db-tag
+
+```
+Для каждого из наших тасков будем определять тег, чтобы
+иметь возможность запускать отдельные таски, имеющие
+определенный тег, а не запускать таски все сразу. 
+- Шаблон конфига MongoDB
+В директории ansibe/templates создадим файл
+mongod.conf.j2 
+Вставим в данный шаблон параметризованный
+конфиг для MongoDB 
+```
+# Where and how to store data.
+storage:
+  dbPath: /var/lib/mongodb
+  journal:
+    enabled: true
+
+# where to write logging data.
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+# network interfaces
+net:
+  port: {{ mongo_port | default('27017') }}
+  bindIp: {{ mongo_bind_ip }}
+  ```
+- Пробный прогон
+```
+ansible-playbook reddit_app.yml --check --limit db
+```
+Видим ошибку: 'mongo_bind_ip' is undefined"  переменная,
+которая используется в шаблоне не определена
+- Определение переменных
+Определим значения переменных в нашем плейбуке
+```
+---
+- name: Configure hosts & deploy application
+ hosts: all
+ vars:
+ mongo_bind_ip: 0.0.0.0
+ tasks:
+ - name: Change mongo config file
+ become: true
+ template:
+ src: templates/mongod.conf.j2
+ dest: /etc/mongod.conf
+ mode: 0644
+ tags: db-tag
+ ```
+- Повторим проверку плейбука
+```
+ ansible-playbook reddit_app.yml --check --limit db
+ ```
+Проверка  прошла успешно
+- Handlers
+Handlers похожи на таски, однако запускаются
+только по оповещению других тасков. Таск шлет
+оповещение handler-у в случае, когда он меняет
+свое состояние. По этой причине handlers удобно
+использовать для перезапуска сервисов
+- Добавим handlers
+```
+ansible/reddit_app.yml
+---
+- name: Configure hosts & deploy application
+ hosts: all
+ vars:
+ mongo_bind_ip: 0.0.0.0
+ tasks:
+ - name: Change mongo config file
+ become: true
+ template:
+ src: templates/mongod.conf.j2
+ dest: /etc/mongod.conf
+ mode: 0644
+ tags: db-tag
+ notify: restart mongod
+ handlers:
+ - name: restart mongod
+ become: true
+ service: name=mongod state=restarted
+ ```
+ Применим плейбук
+- Настройка инстанса приложения
+Создадим директорию files внутри директории
+ansible и добавьте туда файл puma.service файл. 
+Добавим в наш сценарий таск для копирования unit файла на хост приложения. 
+```
+ tasks:
+ - name: Change mongo config file
+...
+ - name: Add unit file for Puma
+ become: true
+ copy:
+ src: files/puma.service
+ dest: /etc/systemd/system/puma.service
+ tags: app-tag
+ notify: reload puma
+ - name: enable puma
+ become: true
+ systemd: name=puma enabled=yes
+ tags: app-tag
+ ```
+ Не забудем добавить новый handler, который
+указывает systemd, что unit для сервиса изменился и
+его следует перечитать
+```
+ handlers:
+ - name: restart mongod
+ become: true
+ service: name=mongod state=restarted
+
+ - name: reload puma
+ become: true
+ systemd: name=puma state=restarted 
+ ```
+  В unit файле добавим строку чтения
+переменных окружения из файла:
+```
+EnvironmentFile=/home/appuser/db_config 
+```
+Создадим шаблон в директории templates/
+db_config.j2 куда добавим следующую строку: 
+```
+DATABASE_URL={{ db_host }}
+```
+Добавим таск для копирования созданного шаблона: 
+```
+- name: Add unit file for Puma
+...
+ - name: Add config for DB connection
+ template:
+ src: templates/db_config.j2
+ dest: /home/appuser/db_config
+ tags: app-tag
+ - name: enable puma
+ become: true
+ systemd: name=puma enabled=yes
+ tags: app-tag
+ ```
+ И не забудем определить переменную db_host
+ ```
+ ---
+- name: Configure hosts & deploy application
+ hosts: all
+ vars:
+ mongo_bind_ip: 0.0.0.0
+ db_host: 10.132.0.2
+ tasks:
+
+```
+Пробный прогон: 
+```
+$ ansible-playbook reddit_app.yml --check --limit
+app --tags app-tag 
+```
+Применим наши таски плейбука с тегом app-tag для
+группы хостов app:
+```
+$ ansible-playbook reddit_app.yml --limit app --tags
+app-tag 
+```
+### Деплой
+ Добавим еще несколько тасков в сценарий нашего
+плейбука
+Используем модули git и bundle для клонирования
+последней версии кода нашего приложения и
+установки зависимых гемов через bundle. 
+```
+ansible/reddit_app.yml
+ tasks:
+...
+ - name: Fetch the latest version of application code
+ git:
+ repo: 'https://github.com/express42/reddit.git'
+ dest: /home/appuser/reddit
+ version: monolith
+ tags: deploy-tag
+ notify: reload puma
+ - name: Bundle install
+ bundler:
+ state: present
+ chdir: /home/appuser/reddit
+ tags: deploy-tag 
+```
+- Выполняем деплой
+```
+$ ansible-playbook reddit_app.yml --check --limit app --tags deploy-tag
+$ ansible-playbook reddit_app.yml --limit app --tags deploy-tag 
+```
+Проверяем работу приложения
+ip_address:9292
