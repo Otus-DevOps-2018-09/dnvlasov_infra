@@ -1724,3 +1724,136 @@ $ ansible-playbook reddit_app.yml --limit app --tags deploy-tag
 ```
 Проверяем работу приложения
 ip_address:9292
+
+#### Один плейбук, несколько сценариев
+ 
+ - Сценарий для MongoDB
+ Создадим новый файл reddit_app2.yml в
+директории ansible. Определим в нем несколько
+сценариев (plays), в которые объединим задачи,
+относящиеся к используемым в плейбуке тегам
+- Определим отдельный сценарий для управления
+конфигурацией MongoDB
+```
+---
+- name: Configure hosts & deploy application
+  hosts: all
+  vars:
+    mongo_bind_ip: 0.0.0.0
+  tasks:
+    - name: Change mongo config file
+      become: true
+      template:
+        src: templates/mongod.conf.j2
+        dest: /etc/mongod.conf
+        mode: 0644
+      tags: db-tag
+      notify: restart mongod
+
+  handlers:
+  - name: restart mongod
+    become: true
+    service: name=mongod state=restarted
+```
+Изменим словесное описание, укажем нужную
+группу хостов. Уберем теги из тасков и определим
+тег на уровне сценария, чтобы мы могли запускать
+сценарий, используя тег.
+Вынесем   ```become: true```  на уровень сценария.
+```
+---
+- name: Configure MongoDB
+  hosts: db
+  tags: db-tag
+  become: true
+  vars:
+    mongo_bind_ip: 0.0.0.0
+  tasks:
+    - name: Change mongo config file
+      template:
+        src: templates/mongod.conf.j2
+        dest: /etc/mongod.conf
+        mode: 0644
+      notify: restart mongod
+
+  handlers:
+  - name: restart mongod
+    service: name=mongod state=restarted
+```
+#### Сценарий для App
+
+Для настройки инстанса приложения
+ пометим тегом app-tag. Вставим скопированную
+информацию в reddit_app2.yml следом за сценарием для MongoDB.
+```
+- name: Configure App
+  hosts: app
+  tags: app-tag
+  become: true
+  vars:
+    db_host: 10.132.0.2
+  tasks:
+   - name: Add unit file for Puma
+    copy:
+      src: files/puma.service
+      dest: /etc/systemd/system/puma.service
+    notify: reload puma
+   - name: Add config for DB connection
+     template:
+        src: templates/db_config.j2
+        dest: /home/appuser/db_config
+        owner: appuser
+        group: appuser
+   - name: enable puma
+     systemd: name=puma enabled=yes
+  handlers:
+   - name: reload puma
+     systemd: name=puma state=restarted
+```
+- Пересоздадим инфраструктуру
+
+```
+$ terraform destroy
+$ terraform apply -auto-approve=false
+```
+- Проверим работу сценариев
+db-tag
+```
+$ ansible-playbook reddit_app2.yml --tags db-tag --check
+$ ansible-playbook reddit_app2.yml --tags db-tag 
+```
+app-tag
+```
+$ ansible-playbook reddit_app2.yml --tags app-tag --check
+$ ansible-playbook reddit_app2.yml --tags app-tag 
+```
+#### Сценарий для деплоя
+```
+- name: Deploy App
+  hosts: app
+  tags: deploy-tag
+  tasks:
+    - name: Fetch the latest version of application code
+      git:
+        repo: 'https://github.com/express42/reddit.git'
+        dest: /home/appuser/reddit
+        version: monolith
+      notify: restart puma
+
+    - name: bundle install
+      bundler:
+        state: present
+        chdir: /home/appuser/reddit
+
+  handlers:
+  - name: restart puma
+    become: true
+    systemd: name=puma state=restarted
+```
+Проверка сценария 
+```
+ $ ansible-playbook reddit_app2.yml --tags deploy-tag --check
+ $ ansible-playbook reddit_app2.yml --tags deploy-tag 
+ ```
+ проверка   ```  http://ip_address:9292```
+
