@@ -997,25 +997,6 @@ zone = "zone name"
 The resource 'projects/infra-179014/global/firewalls/default-allow-ssh' already exists,
 alreadyExists
 
-=======
-Определим ресурс файервола.
-```
-resource "google_compute_firewall" "firewall_ssh" { name = "default-allow-ssh"
-network = "default"
-allow {
-protocol = "tcp" ports = ["22"]
-}
-source_ranges = ["0.0.0.0/0"] }
-```
-Выполним команду применения изменений: ...
-```
-google_compute_firewall.firewall_ssh: 1 error(s) occurred:
- $ terraform apply
-google_compute_instance.app: Refreshing state... (ID: reddit-app)
-
-*google_compute_firewall.firewall_ssh: Error creating firewall: googleapi: Error 409: The resource 'projects/infra-179014/global/firewalls/default-allow-ssh' already exists, alreadyExists
-```
->>>>>>> ansible-1
 Правило firewall/default-allow-ssh уже существует.
 
 Импортируем существующую инфраструктуру в Terraform
