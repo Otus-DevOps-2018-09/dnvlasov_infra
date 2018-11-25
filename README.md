@@ -975,6 +975,29 @@ terraform.tfvars
 zone = "zone name"
 ```
 ### ДЗ №7
+<<<<<<< HEAD
+ Определим ресурс файервола.
+ ```
+ resource "google_compute_firewall" "firewall_ssh" { name = "default-allow-ssh"
+ network = "default"
+ allow {
+ protocol = "tcp" ports = ["22"]
+ }
+ source_ranges = ["0.0.0.0/0"] }
+```
+ Выполним команду применения изменений:
+...
+* google_compute_firewall.firewall_ssh: 1 error(s) occurred:
+```
+ $ terraform apply
+ ```
+ google_compute_instance.app: Refreshing state... (ID: reddit-app)
+
+*google_compute_firewall.firewall_ssh: Error creating firewall: googleapi: Error 409:
+The resource 'projects/infra-179014/global/firewalls/default-allow-ssh' already exists,
+alreadyExists
+
+=======
 Определим ресурс файервола.
 ```
 resource "google_compute_firewall" "firewall_ssh" { name = "default-allow-ssh"
@@ -992,6 +1015,7 @@ google_compute_instance.app: Refreshing state... (ID: reddit-app)
 
 *google_compute_firewall.firewall_ssh: Error creating firewall: googleapi: Error 409: The resource 'projects/infra-179014/global/firewalls/default-allow-ssh' already exists, alreadyExists
 ```
+>>>>>>> ansible-1
 Правило firewall/default-allow-ssh уже существует.
 
 Импортируем существующую инфраструктуру в Terraform
@@ -1004,27 +1028,55 @@ Imported google_compute_firewall (ID: default-allow-ssh)
 google_compute_firewall.firewall_ssh: Refreshing state... (ID: default-allow-ssh)
 Import successful!
 ```
+<<<<<<< HEAD
+
+ Ресурс IP адреса
+
+ Зададим IP для инстанса с приложением в виде внешнего ресурса. Для этого определим ресурс google_compute_address в конфигурационном файле main.tf
+=======
 #### Ресурс IP адреса
 
 Зададим IP для инстанса с приложением в виде внешнего ресурса. Для этого определим ресурс google_compute_address в конфигурационном файле main.tf
+>>>>>>> ansible-1
 ```
 resource "google_compute_address" "app_ip" { name = "reddit-app-ip"
 }
 ```
+<<<<<<< HEAD
+ Ссылаемся на атрибуты другого ресурса
+ Для того чтобы использовать созданный IP адрес в
+нашем ресурсе VM нам необходимо сослаться на
+атрибуты ресурса, который этот IP создает, внутри
+конфигурации ресурса VM. В конфигурации ресурса VM
+определите, IP адрес для создаваемого инстанса.
+=======
 Ссылаемся на атрибуты другого ресурса Для того чтобы использовать созданный IP адрес в нашем ресурсе VM нам необходимо сослаться на атрибуты ресурса, который этот IP создает, внутри конфигурации ресурса VM. В конфигурации ресурса VM определите, IP адрес для создаваемого инстанса.
+>>>>>>> ansible-1
 ```
 network_interface { network = "default" access_config = {
 nat_ip = "${google_compute_address.app_ip.address}" }
      15
 }
 ```
+<<<<<<< HEAD
+Неявная зависимость.
+
+Ссылку в одном ресурсе на атрибуты другого тераформ понимает как зависимость одного ресурса от другого. Это влияет на очередность создания и удаления ресурсов при применении изменений.
+Вновь пересоздадим все ресурсы и посмотрим на очередность создания ресурсов сейчас
+=======
 #### Неявная зависимость.
 
 Ссылку в одном ресурсе на атрибуты другого тераформ понимает как зависимость одного ресурса от другого. Это влияет на очередность создания и удаления ресурсов при применении изменений. Вновь пересоздадим все ресурсы и посмотрим на очередность создания ресурсов сейчас
+>>>>>>> ansible-1
 ```
  $ terraform destroy
  $ terraform plan
  $ terraform apply
+<<<<<<< HEAD
+ ```
+ ```
+=======
+>>>>>>> ansible-1
 google_compute_address.app_ip: Creating...
 google_compute_firewall.firewall_puma: Creating...
 google_compute_firewall.firewall_ssh: Creating...
@@ -1034,6 +1086,20 @@ google_compute_instance.app: Creating...
 ```
 Видим, что ресурс VM начал создаваться только после завершения создания IP адреса в результате неявной зависимости этих ресурсов.
 
+<<<<<<< HEAD
+ Структуризация ресурсов
+  Несколько VM
+
+  Вынесем БД на отдельный инстанс VM. Для этого необходимо в директории packer, где содержатся ваши шаблоны для билда VM, создать два новых шаблона db.json и app.json. При помощи шаблона db.json должен собираться образ VM, содержащий установленную MongoDB. Шаблон app.json должен использоваться для сборки образа VM, с установленными Ruby. В качестве базового образа для создания образа возьмем ubuntu16.04.
+
+  Создадим две VM
+
+  Разобьем конфиг main.tf на несколько конфигов. Создадим файл app.tf, куда вынесем конфигурацию для VM с приложением.
+
+Образ приложения. 
+
+  variables.tf:
+=======
 #### Структуризация ресурсов Несколько VM
 
 Вынесем БД на отдельный инстанс VM. Для этого необходимо в директории packer, где содержатся ваши шаблоны для билда VM, создать два новых шаблона db.json и app.json. При помощи шаблона db.json должен собираться образ VM, содержащий установленную MongoDB. Шаблон app.json должен использоваться для сборки образа VM, с установленными Ruby. В качестве базового образа для создания образа возьмем ubuntu16.04.
@@ -1045,12 +1111,17 @@ google_compute_instance.app: Creating...
 Образ приложения.
 
 variables.tf:
+>>>>>>> ansible-1
 ```
 variable app_disk_image {
 description = "Disk image for reddit app" default = "reddit-app-base"
 }
 ```
+<<<<<<< HEAD
+ app.tf
+=======
 app.tf
+>>>>>>> ansible-1
 ```
 resource "google_compute_instance" "app" { name = "reddit-app"
 machine_type = "g1-small"
@@ -1078,6 +1149,10 @@ protocol = "tcp" ports = ["9292"]
 source_ranges = ["0.0.0.0/0"] target_tags = ["reddit-app"]
 }
 ```
+<<<<<<< HEAD
+
+=======
+>>>>>>> ansible-1
 Объявить переменную в variables.tf
 ```
 variable db_disk_image {
@@ -1099,19 +1174,37 @@ metadata {
 ssh-keys = "appuser:${file(var.public_key_path)}" }
 }
 ```
+<<<<<<< HEAD
+
 Добавим в db.tf правило файервола, которое даст доступ приложению к БД
+
+=======
+Добавим в db.tf правило файервола, которое даст доступ приложению к БД
+>>>>>>> ansible-1
 ```
 resource "google_compute_firewall" "firewall_mongo" { name = "allow-mongo-default"
 network = "default"
 allow {
 protocol = "tcp" ports = ["27017"]
 }
+<<<<<<< HEAD
+# правило применимо к инстансам с тегом ...
+target_tags = ["reddit-db"]
+# порт будет доступен только для инстансов с тегом ... source_tags = ["reddit-app"]
+}
+```
+
+Создадим файл vpc.tf в который вынесем правило
+фаервола для ssh доступа, которое применимо для
+всех инстансов нашей сети.
+=======
 ```
  правило применимо к инстансам с тегом ...
 ```target_tags = ["reddit-db"]```
  порт будет доступен только для инстансов с тегом ... ```source_tags = ["reddit-app"]
 }```
 Создадим файл vpc.tf в который вынесем правило фаервола для ssh доступа, которое применимо для всех инстансов нашей сети.
+>>>>>>> ansible-1
 ```
 resource "google_compute_firewall" "firewall_ssh" { name = "default-allow-ssh"
 network = "default"
@@ -1119,22 +1212,41 @@ allow {
 protocol = "tcp" ports = ["22"]
 }
 source_ranges = ["0.0.0.0/0"] }
+<<<<<<< HEAD
+```
+В файле main.tf остаться только определение провайдера:
+```
+=======
 В файле main.tf остаться только определение провайдера:
 
+>>>>>>> ansible-1
 provider "google" {
 version = "1.4.0"
 project = "${var.project}" region = "${var.region}"
 }
 ```
+<<<<<<< HEAD
+Модули
+=======
 #### Модули
+>>>>>>> ansible-1
 
 Разбиваем нашу конфигурацию на отдельные конфиг файлы.
 
 Внутри директории terraform создайте директорию modules, в которой мы будет определять модули.
 
+<<<<<<< HEAD
+ DB module
+Внутри директории modules создайте директорию db, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf.
+Скопируем содержимое db.tf, который мы создали ранее, в modules/db/main.tf.
+Затем определим переменные, которые у нас используются в db.tf и объявляются в variables.tf в файл переменных модуля modules/db/variables.tf
+```
+
+=======
 DB module Внутри директории modules создайте директорию db, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf. Скопируем содержимое db.tf, который мы создали ранее, в modules/db/main.tf. Затем определим переменные, которые у нас используются в db.tf и объявляются в variables.tf в файл переменных модуля modules/db/variables.tf
 
 ```
+>>>>>>> ansible-1
 variable public_key_path {
 description = "Path to the public key used to connect to instance"
 }
@@ -1143,6 +1255,20 @@ variable zone { description = "Zone"
 variable db_disk_image {
 description = "Disk image for reddit db" default = "reddit-db-base"
 ```
+<<<<<<< HEAD
+
+ App module
+
+ Создадим по аналогии модуль приложения: в директории modules создадим директорию app, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf.
+
+ Скопируем содержимое app.tf, который мы создали ранее, в modules/app/main.tf
+
+ Затем определим переменные, которые у нас
+используются в app.tf и объявляются в variables.tf в файл
+переменных модуля modules/app/variables.tf
+
+ ```
+=======
 App module
 
 Создадим по аналогии модуль приложения: в директории modules создадим директорию app, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf.
@@ -1151,6 +1277,7 @@ App module
 
 Затем определим переменные, которые у нас используются в app.tf и объявляются в variables.tf в файл переменных модуля modules/app/variables.tf
 ```
+>>>>>>> ansible-1
 variable public_key_path {
 description = "Path to the public key used to connect to instance"
 }
@@ -1168,6 +1295,18 @@ value = "${google_compute_instance.app.network_interface.0.access_config.
 0.assigned_nat_ip}"
 }
 ```
+<<<<<<< HEAD
+ Проверим работу модулей
+
+ В файл main.tf, где у нас определен провайдер вставим секции вызова созданных нами модулей
+
+  terraform/main.tf
+  ```
+...
+module "app" {
+Источник, откуда копировать модуль
+ source = "modules/app" public_key_path = "${var.public_key_path}" zone = "${var.zone}" app_disk_image = "${var.app_disk_image}"
+=======
 Проверим работу модулей
 
 В файл main.tf, где у нас определен провайдер вставим секции вызова созданных нами модулей
@@ -1178,29 +1317,52 @@ terraform/main.tf
 module "app" {
 Источник, откуда копировать модуль
 source = "modules/app" public_key_path = "${var.public_key_path}" zone = "${var.zone}" app_disk_image = "${var.app_disk_image}"
+>>>>>>> ansible-1
 }
 module "db" {
 source = "modules/db" public_key_path = "${var.public_key_path}" zone = "${var.zone}"
 }
 db_disk_image
 ```
+<<<<<<< HEAD
+
+=======
+>>>>>>> ansible-1
 Используем команду для загрузки модулей. В директории terraform:
 ```
 $ terraform get
 ```
+<<<<<<< HEAD
+Модули будут загружены в директорию `.terraform`, в
+которой уже содержится провайдер 
+
+ Получаем output переменные из модуля
+
+ В созданном нами модуле app мы определили выходную переменную для внешнего IP инстанса. Чтобы получить значение этой переменной, переопределим ее
+=======
 Модули будут загружены в директорию .terraform, в которой уже содержится провайдер
 
 Получаем output переменные из модуля
 
 В созданном нами модуле app мы определили выходную переменную для внешнего IP инстанса. Чтобы получить значение этой переменной, переопределим ее
+>>>>>>> ansible-1
 ```
 output "app_external_ip" {
 value = "${module.app.app_external_ip}"
 }
 ```
+<<<<<<< HEAD
+ Самостоятельное задание
+
+ Аналогично предыдущим модулям создайте модуль vpc, в котором определите настройки файервола в рамках сети.
+Используйте созданный модуль в основной конфигурации terraform/main.tf
+
+
+=======
 Самостоятельное задание
 
 Аналогично предыдущим модулям создайте модуль vpc, в котором определите настройки файервола в рамках сети. Используйте созданный модуль в основной конфигурации terraform/main.tf
+>>>>>>> ansible-1
 ```
 resource "google_compute_firewall" "firewall_ssh" {
   name    = "default-allow-ssh"
@@ -1212,13 +1374,61 @@ resource "google_compute_firewall" "firewall_ssh" {
   source_ranges = "${var.source_ranges}"
 }
 ```
+<<<<<<< HEAD
+
+ Теперь мы можем задавать диапазоны IP адресов для правила файервола при вызове модуля.
+terraform/main.tf
+=======
 Теперь мы можем задавать диапазоны IP адресов для правила файервола при вызове модуля. terraform/main.tf
+>>>>>>> ansible-1
 ```
 ...
 module "vpc" {
 source = "modules/vpc"
 source_ranges = ["внешний ip"] }
 ```
+<<<<<<< HEAD
+ Самостоятельное задание
+Проверьте работу параметризованного в прошлом слайде модуля vpc.
+1. Введите в source_ranges не ваш IP адрес, примените правило и проверьте отсутствие соединения к обоим хостам по ssh. Проконтролируйте, как изменилось правило файрвола в веб консоли.
+ 
+ Нет доступа к хостам app и db в фильтрах   измениля ip адрес   
+
+2. Введите в source_ranges ваш IP адрес, примените правило и проверьте наличие соединения к обоим хостам по ssh.
+3. Верните 0.0.0.0/0 в source_ranges.
+
+ Переиспользование модулей
+
+  Создадим Stage & Prod
+
+  В директории terrafrom создайте две директории: stage и prod. Скопируйте файлы main.tf, variables.tf, outputs.tf, terraform.tfvars из директории terraform в каждую из созданных директорий. Поменяйте пути к модулям в main.tf на "../modules/xxx" вместо "modules/xxx".
+
+  Инфраструктура в обоих окружениях будет идентична, однако будет иметь небольшие различия: мы откроем SSH доступ для всех IP адресов в окружении Stage, а в окружении Prod откроем доступ только для своего IP.
+
+  terraform/stage/main.tf
+  ```
+provider "google" {
+  version = "1.4.0"
+  project = "${var.project}"
+  region  = "${var.region}"
+}
+module "app" {
+  source          = "../modules/app"
+  public_key_path = "${var.public_key_path}"
+  app_disk_image  = "${var.app_disk_image}"
+}
+module "db" {
+  source          = "../modules/db"
+  public_key_path = "${var.public_key_path}"
+  db_disk_image  = "${var.db_disk_image}"
+}
+module "vpc" {
+  source          = "../modules/vpc"
+  source_ranges = ["0.0.0.0/0"]
+}
+```
+ terraform/prod/main.tf
+=======
 Самостоятельное задание Проверьте работу параметризованного в прошлом слайде модуля vpc.
 
 Введите в source_ranges не ваш IP адрес, примените правило и проверьте отсутствие соединения к обоим хостам по ssh. Проконтролируйте, как изменилось правило файрвола в веб консоли.
@@ -1257,6 +1467,7 @@ source_ranges = ["0.0.0.0/0"]
 }
 ```
 terraform/prod/main.tf
+>>>>>>> ansible-1
 ```
 provider "google" {
   version = "1.4.0"
@@ -1278,6 +1489,17 @@ module "vpc" {
   source_ranges = ["82.155.222.156/32"]
 }
 ```
+<<<<<<< HEAD
+
+ Работа с реестром модулей.
+
+Давайте попробуем воспользоваться модулем storage-bucket
+для создания бакета в сервисе Storage.
+
+Создайте в папке terraform файл 
+```
+storage-bucket.tf с таким содержанием:
+=======
 #### Работа с реестром модулей.
 
 Давайте попробуем воспользоваться модулем storage-bucket для создания бакета в сервисе Storage.
@@ -1286,6 +1508,7 @@ module "vpc" {
 
 storage-bucket.tf с таким содержанием:
  ```
+>>>>>>> ansible-1
  provider "google" { version = "1.4.0"
 project = "${var.project}" region = "${var.region}"
 }
@@ -1298,13 +1521,22 @@ output storage-bucket_url {
 value = "${module.storage-bucket.url}"
 }
 ```
+<<<<<<< HEAD
+ Работа с реестром модулей
+
+ Проверьте с помощью gsutil или веб консоли, что бакеты создались и доступны.
+=======
 Работа с реестром модулей
 
 Проверьте с помощью gsutil или веб консоли, что бакеты создались и доступны.
+>>>>>>> ansible-1
 ```
 gsutil ls
 gs://prod-storage-bucket/
 gs://stage-storage-bucket/
+<<<<<<< HEAD
+```
+=======
 ```
 
 
@@ -1504,6 +1736,7 @@ insufficient you can add warn=False to this command task or set command_warnings
 appserver | CHANGED | rc=0 >>
 
 ```
+<<<<<<< HEAD
 
 
 ### ДЗ №9
@@ -2037,3 +2270,6 @@ packer build  -var-file=packer/variables.json  packer/db.json
 
 packer build  -var-file=packer/variables.json  packer/app.json
 ```
+=======
+>>>>>>> ansible-1
+>>>>>>> master
