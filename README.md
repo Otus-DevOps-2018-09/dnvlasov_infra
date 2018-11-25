@@ -1857,7 +1857,7 @@ $ ansible-playbook reddit_app2.yml --tags app-tag
 ```
  проверка   ```  http://ip_address:9292```
 
-### Несколько плейбуков
+### cd 
 В директории ansible создадим три новых файла app.yml, db.yml, deploy.yml. 
 mkdir {app,db,deploy}.yml
 Заодно переименуем наши предыдущие плейбуки:
@@ -1960,3 +1960,80 @@ $ ansible-playbook site.yml
 ```
 #### Проверим работу приложения
 http://ip_address:9292
+
+### Изменим провижининг в Packer
+
+Создадим  плейбуки
+ansible/packer_app.yml 
+
+```
+---
+- name: Install Ruby && Bundler
+  hosts: all
+  become: true
+  tasks:
+    - name: Install ruby and rubygems and required packages
+      apt: "name={{ item }} state=present"
+      with_items:
+           - ruby-full
+           - ruby-bundler
+           - build-essential
+```
+ansible/packer_db.yml.
+```
+---
+- name: Install MongoDB 3.2
+  hosts: all
+  become: true
+  tasks:
+    - name: Add APT key
+      apt_key:
+         id: EA312927
+         keyserver: keyserver.ubuntu.com
+
+    - name: Add APT repository
+      apt_repository:
+         repo: deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse
+         state: present
+
+    - name: Install mongodb package
+      apt:
+       name: mongodb-org
+       state: present
+
+    - name: Configure service supervisor
+      systemd:
+       name: mongod
+       enabled: yes
+```
+#### Интегрируем Ansible в Packer
+Заменим секцию Provision в образе packer/app.json на Ansible 
+```json
+{
+          "provisioners": [
+              {
+              "type": "ansible",
+              "playbook_file":"ansible/packer_app.yml"
+              }
+       ]
+}
+```
+Такие же изменения выполним и для packer/db.json
+```json
+{
+    
+      "provisioners": [
+              {
+              "type": "ansible",
+              "playbook_file":"ansible/packer_db.yml"
+          }
+       ]
+}
+```
+Соберем образы 
+db и app
+```bash
+packer build  -var-file=packer/variables.json  packer/db.json
+
+packer build  -var-file=packer/variables.json  packer/app.json
+```
