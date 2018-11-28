@@ -9,3 +9,5 @@ variables.tf
 main.tf.bak
 old
 *.retry
+jdauphant.nginx
+vault.key
