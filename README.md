@@ -2050,20 +2050,23 @@ ansible-galaxy init roles/db
 $tree db
 
 db
-|-- README.md
-|-- defaults      # <-- Директория для переменных по умолчанию
-|     |--main.yml
-|-- handlers
-|     |--main.yml
-|-- meta           # <-- Информация о роли, создателе и зависимостях
-|     |--main.yml
-|-- tasks          # <-- Директория для тасков
-|     |--main.yml
-|-- tests
-|     |--inventory
-|     |--test.yml
-|-- vars           # <-- Директория для переменных, которые не должны 
-    |--main.yml    #     переопределяться пользователем
+├── defaults
+│   └── main.yml
+├── files
+├── handlers
+│   └── main.yml
+├── meta
+│   └── main.yml
+├── README.md
+├── tasks
+│   └── main.yml
+├── templates
+│   └── mongod.conf.j2
+├── tests
+│   ├── inventory   
+│   └── test.yml
+└── vars
+    └── main.yml
 
 6 directories, 8 files
 ```
@@ -2080,6 +2083,7 @@ db
 	dest: /etc/mongod.conf
 	mode: 0644
   notify: restart mongod
+```
 Определяем хендлер в директории handlers роли
 
 # handlers file for db

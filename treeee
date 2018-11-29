@@ -1,0 +1,176 @@
+.
+├── ansible
+│   ├── ansible.cfg
+│   ├── d_invent.sh
+│   ├── environments
+│   │   ├── prod
+│   │   │   ├── credentials.yml
+│   │   │   ├── group_vars
+│   │   │   │   ├── all
+│   │   │   │   ├── app
+│   │   │   │   └── db
+│   │   │   ├── inventory
+│   │   │   └── requirements.yml
+│   │   └── stage
+│   │       ├── credentials.yml
+│   │       ├── group_vars
+│   │       │   ├── all
+│   │       │   ├── app
+│   │       │   └── db
+│   │       ├── inventory
+│   │       └── requirements.yml
+│   ├── old
+│   │   ├── files
+│   │   │   ├── deploy.sh
+│   │   │   └── puma.service
+│   │   ├── inventory.json
+│   │   ├── inventory.yml
+│   │   ├── reddit_app_multiple_plays.yml
+│   │   ├── reddit_app_one_play.yml
+│   │   └── templates
+│   │       ├── db_config.j2
+│   │       └── mongod.conf.j2
+│   ├── playbooks
+│   │   ├── app.yml
+│   │   ├── clone.yml
+│   │   ├── db.yml
+│   │   ├── deploy.yml
+│   │   ├── site.yml
+│   │   └── users.yml
+│   ├── requirements.txt
+│   └── roles
+│       ├── app
+│       │   ├── defaults
+│       │   │   └── main.yml
+│       │   ├── files
+│       │   │   └── puma.service
+│       │   ├── handlers
+│       │   │   └── main.yml
+│       │   ├── meta
+│       │   │   └── main.yml
+│       │   ├── README.md
+│       │   ├── tasks
+│       │   │   └── main.yml
+│       │   ├── templates
+│       │   │   └── db_config.j2
+│       │   ├── tests
+│       │   │   ├── inventory
+│       │   │   └── test.yml
+│       │   └── vars
+│       │       └── main.yml
+│       ├── db
+│       │   ├── defaults
+│       │   │   └── main.yml
+│       │   ├── files
+│       │   ├── handlers
+│       │   │   └── main.yml
+│       │   ├── meta
+│       │   │   └── main.yml
+│       │   ├── molecule
+│       │   │   └── default
+│       │   │       └── tests
+│       │   │           └── test_default.pyc
+│       │   ├── README.md
+│       │   ├── tasks
+│       │   │   └── main.yml
+│       │   ├── templates
+│       │   │   └── mongod.conf.j2
+│       │   ├── tests
+│       │   │   ├── inventory
+│       │   │   └── test.yml
+│       │   └── vars
+│       │       └── main.yml
+│       └── jdauphant.nginx
+│           ├── ansible.cfg
+│           ├── defaults
+│           │   └── main.yml
+│           ├── handlers
+│           │   └── main.yml
+│           ├── meta
+│           │   └── main.yml
+│           ├── README.md
+│           ├── tasks
+│           │   ├── amplify.yml
+│           │   ├── cloudflare_configuration.yml
+│           │   ├── configuration.yml
+│           │   ├── ensure-dirs.yml
+│           │   ├── installation.packages.yml
+│           │   ├── main.yml
+│           │   ├── nginx-official-repo.yml
+│           │   ├── remove-defaults.yml
+│           │   ├── remove-extras.yml
+│           │   ├── remove-unwanted.yml
+│           │   └── selinux.yml
+│           ├── templates
+│           │   ├── auth_basic.j2
+│           │   ├── config_cloudflare.conf.j2
+│           │   ├── config.conf.j2
+│           │   ├── config_stream.conf.j2
+│           │   ├── module.conf.j2
+│           │   ├── nginx.conf.j2
+│           │   ├── nginx.repo.j2
+│           │   └── site.conf.j2
+│           ├── test
+│           │   ├── custom_bar.conf.j2
+│           │   ├── example-vars.yml
+│           │   └── test.yml
+│           ├── Vagrantfile
+│           └── vars
+│               ├── Debian.yml
+│               ├── empty.yml
+│               ├── FreeBSD.yml
+│               ├── main.yml
+│               ├── RedHat.yml
+│               └── Solaris.yml
+├── config-scripts
+│   ├── deploy.sh
+│   ├── install_mongodb.sh
+│   ├── install_ruby.sh
+│   └── startup.sh
+├── LICENSE
+├── packer
+│   ├── scripts
+│   │   ├── deploy.sh
+│   │   ├── install_mongodb.sh
+│   │   └── install_ruby.sh
+│   ├── ubuntu16.json
+│   ├── ubuntu16.json.bak
+│   ├── variables.json
+│   └── variables.json.example
+├── play-travis
+│   └── test.py
+├── README.md
+├── terraform
+│   ├── files
+│   │   ├── deploy.sh
+│   │   └── puma.service
+│   ├── modules
+│   │   ├── app
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
+│   │   ├── db
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
+│   │   └── vpc
+│   │       ├── main.tf
+│   │       └── variables.tf
+│   ├── prod
+│   │   ├── main.tf
+│   │   └── outputs.tf
+│   ├── stage
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   ├── terraform.tfstate
+│   │   ├── terraform.tfstate.backup
+│   │   ├── terraform.tfvars
+│   │   └── variables.tf
+│   ├── storage-bucket.tf
+│   └── terraform.tfvars.examples
+├── treeee
+└── VPN
+    ├── cloud-bastion.ovpn
+    └── setupvpn.sh
+
+53 directories, 120 files
