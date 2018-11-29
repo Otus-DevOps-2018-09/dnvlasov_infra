@@ -2037,3 +2037,114 @@ packer build  -var-file=packer/variables.json  packer/db.json
 
 packer build  -var-file=packer/variables.json  packer/app.json
 ```
+
+### ДЗ №10
+#### Ansible: работа с ролями и окружениями.
+- Создадим роли 
+```bash
+ansible-galaxy init roles/app
+ansible-galaxy init roles/db
+```
+Посмотрим структуру директории
+```
+$tree db
+
+db
+|-- README.md
+|-- defaults      # <-- Директория для переменных по умолчанию
+|     |--main.yml
+|-- handlers
+|     |--main.yml
+|-- meta           # <-- Информация о роли, создателе и зависимостях
+|     |--main.yml
+|-- tasks          # <-- Директория для тасков
+|     |--main.yml
+|-- tests
+|     |--inventory
+|     |--test.yml
+|-- vars           # <-- Директория для переменных, которые не должны 
+    |--main.yml    #     переопределяться пользователем
+
+6 directories, 8 files
+```
+
+- Скопируем  секцию tasks в сценарии плейбука ansible/db.yml
+и вставим в ее в файл в директории tasks роли db
+```yml
+Файл ansible/roles/db/tasks/main.yml
+
+#tasks file for db
+- name: Change mongo config file
+  template:
+	src: mongod.conf.j2
+	dest: /etc/mongod.conf
+	mode: 0644
+  notify: restart mongod
+Определяем хендлер в директории handlers роли
+
+# handlers file for db
+- name: restart mongod
+  service: name=mongod state=restarted
+```
+Определим используеме в шаблоне переменные в секции переменных по умолчанию (файл
+ansible/roles/db/defaults/main.yml)
+```yml
+# defaults file for db
+mongo_port: 27017
+mongo_bind_ip: 127.0.0.1
+```
+#### Роль для приложения
+- Выполним команду ansible-galaxy init в папке roles/app
+- Скопируем в секцию tasks сценарий плейбука ansible/app.yml
+```yml
+ansible/roles/app/tasks/main.yml
+
+# tasks file for app
+- name: Add unit file for Puma
+  copy:
+    src: puma.service 
+    dest: /etc/systemd/system/puma.service
+  notify: reload puma
+
+- name: Add config for DB connection
+  template:
+      src: db_config.j2
+      dest: /home/appuser/db_config
+      owner: appuser
+      group: appuser
+- name: enable puma
+  systemd: name=puma enabled=yes
+```
+- Скопируем db_config.j2 из директории
+ansible/templates в директорию 
+ansible/roles/app/templates
+- Файлы ansible/files/puma.service в
+ansible/roles/app/files
+- Опишим хендлер соответствующий директории app
+```yml
+ansible/role/app/handlers/main.yml
+---
+# handlers file for app
+- name: reload puma
+  systemd: name=puma state=restarted
+```
+Также определим переменную по умолчанию подключения к MongoDB
+```yml
+ansible/role/app/defaults/main.yml  
+---
+# defaults file for app
+db_host: 127.0.0.1
+env: local
+```
+Удалим определение такков и чендлеров в плейбуке ansible/app.yml
+```yml
+---
+- name: Configure App
+  hosts: app
+  become: true
+  vars:
+    db_host: 10.140.0.2
+  roles:
+    - app  
+ 
+```
