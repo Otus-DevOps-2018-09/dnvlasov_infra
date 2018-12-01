@@ -2045,28 +2045,28 @@ packer build  -var-file=packer/variables.json  packer/app.json
 ansible-galaxy init roles/app
 ansible-galaxy init roles/db
 ```
-Посмотрим структуру директории
+Структура диектории  созданной  роли db
 ```
 $tree db
 
 db
-├── defaults
+├── defaults          # <-- Диектория для переменных по умолчанию
 │   └── main.yml
 ├── files
 ├── handlers
 │   └── main.yml
-├── meta
+├── meta              # <-- Информация о роли, создателе и зависимостях
 │   └── main.yml
 ├── README.md
-├── tasks
+├── tasks             # <-- Директоря для тасков
 │   └── main.yml
 ├── templates
 │   └── mongod.conf.j2
 ├── tests
 │   ├── inventory   
 │   └── test.yml
-└── vars
-    └── main.yml
+└── vars              # <-- Директория для переменных, которые не должны 
+    └── main.yml      #     переопределятся пользователем
 
 6 directories, 8 files
 ```
@@ -2076,16 +2076,21 @@ db
 ```yml
 Файл ansible/roles/db/tasks/main.yml
 
-#tasks file for db
+---
+# tasks file for db
+- name: Show info about the env this host belongs to
+  debug: msg="This host is in {{ env }} environment!!!"
+
 - name: Change mongo config file
   template:
-	src: mongod.conf.j2
-	dest: /etc/mongod.conf
-	mode: 0644
+      src: mongod.conf.j2
+      dest: /etc/mongod.conf
+      mode: 0644
   notify: restart mongod
+
 ```
 Определяем хендлер в директории handlers роли
-
+```yml
 # handlers file for db
 - name: restart mongod
   service: name=mongod state=restarted
@@ -2140,7 +2145,7 @@ ansible/role/app/defaults/main.yml
 db_host: 127.0.0.1
 env: local
 ```
-Удалим определение такков и чендлеров в плейбуке ansible/app.yml
+Удалим определение тасков и хендлеров в плейбуке ansible/app.yml
 ```yml
 ---
 - name: Configure App
@@ -2152,3 +2157,134 @@ env: local
     - app  
  
 ```
+Пересоздадим окружение stage terraform
+```bash
+terraform destroy
+terraform apply --auto-approve=false
+```
+
+Запустим плейбуки
+```bash
+./d_invent.sh site.yml --check
+./d_invent.sh site.yml 
+```
+
+Проверим работу приложения
+`http://ip_address:9292`
+
+#### Окружение
+
+- Определим окружение по умолчанию
+```yml
+
+[defaults]
+inventory = ./environments/stage/inventory
+remote_user = appuser
+private_key_file = ~/.ssh/appuser
+host_key_checking = False
+```
+Ansible позволяет задавать  переменные для группы хостов.
+директория group_vars позволяет создавать файлы (имена, которых
+должны соответствовать названиям групп в инвентори файле) для
+определения переменных для группы хостов.
+- Создадим директорию group_vars в директориях наших
+окружений `nvironments/prod` и `environments/stage`.
+#### Конфигурация Stage
+- Зададим настройки окружения stage, используя групповые
+переменные:
+1. Создадим файлы `stage/group_vars/app` для определения
+переменных для группы хостов app, описанных в инвентори
+файле `stage/inventory`
+2. Скопируем в этот файл переменные, определенные в плейбуке
+`ansible/app.yml.`
+3. Также удалим определение переменных из самого плейбука
+`ansible/app.yml.`
+
+- Аналогичным образом определим переменные для группы
+хостов БД на окружении stage:
+
+1. Создадим файл `stage/group_vars/db` и скопируем в него
+содержимое переменные из плейбука `ansible/db.yml`
+2. Секцию определения переменных из самого плейбука
+`ansible/db.yml` удалим.
+
+- Создайте файл `ansible/environments/stage/group_vars/all`
+со следующим содержимым:
+```yml
+env: stage
+```
+#### Конфигурация Prod
+1. Для настройки окружения prod скопируйте файлы app, db, all из
+директории stage/group_vars в директорию prod/group_vars.
+2. В файле prod/group_vars/all измените значение env
+переменной на prod
+```yml
+env: prod
+```
+#### Вывод информации об окружении
+Для роли app в файле `ansible/roles/app/defaults/main.yml`:
+```yml
+---
+# defaults file for app
+db_host: 127.0.0.1
+env: local
+```
+
+Для роли db в файле `ansible/roles/db/defaults/main.yml`:
+```yml
+---
+# defaults file for db
+mongo_port: 27017
+mongo_bind_ip: 127.0.0.1
+env: local
+```
+
+#### Вывод информации об окружении
+Будем выводить информацию о том, в каком окружении
+находится конфигурируемый хост. Воспользуемся модулем debug
+для вывода значения переменной. Добавим следующий таск в
+начало наших ролей.
+- Для роли app (файл `ansible/roles/app/tasks/main.yml`):
+```yml
+---
+# tasks file for app
+- name: Show info about the env this host belongs to
+  debug:
+    msg: "This host is in {{ env }} environment!!!"
+```
+Добавим такой же таск в роль db (файл `ansible/roles/db/tasks/main.yml`)
+```yml
+---
+# tasks file for db
+- name: Show info about the env this host belongs to
+  debug: msg="This host is in {{ env }} environment!!!"
+```
+
+#### Улучшим файл ansible.cfg
+```cfg
+[defaults]
+inventory = ./environments/stage/inventory
+remote_user = appuser
+private_key_file = ~/.ssh/appuser
+host_key_checking = False
+retry_files_enabled = False
+roles_path = ./roles
+vault_password_file = ~/.ansible/vault.key
+[diff]
+always = True
+context = 5
+```
+#### Проверка работы с окружениями
+Для проверки пересоздадим инфраструктуру окружения stage,
+используя команды:
+```bash
+$ terraform destroy
+$ terraform apply -auto-approve=false
+```
+Теперь запустим Ansible...
+```bash
+$ ./d_invent.sh playbooks/site.yml --check
+$ ./d_invent.sh playbooks/site.yml
+```
+Проверим работу приложения
+`ip_address:9292`
