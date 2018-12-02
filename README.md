@@ -2288,3 +2288,5 @@ $ ./d_invent.sh playbooks/site.yml
 ```
 Проверим работу приложения
 `ip_address:9292`
+
+### Настройка Prod окружения
