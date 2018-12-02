@@ -2290,3 +2290,183 @@ $ ./d_invent.sh playbooks/site.yml
 `ip_address:9292`
 
 ### Настройка Prod окружения
+
+Для проверки настройки prod окружения сначала удалим
+инфраструктуру окружения stage. Затем поднимем инфраструктуру
+для prod окружения.
+- Перед проверкой не забудьте изменить внешние IP-адреса
+инстансов в инвентори файле
+`ansible/environments/prod/inventory` и переменную
+`db_host` в `prod/group_vars/app`
+
+Если все сделано правильно, то получим примерно такой вывод
+команды ansible-playbook:
+```bash
+$ ansible-playbook -i environments/prod/inventory playbooks/site.yml --check
+$ ansible-playbook -i environments/prod/inventory playbooks/site.yml
+```
+Проверим работу приложения `ip_address:9292`
+
+#### Работа с Community-ролями
+Хорошей практикой является разделение зависимостей ролей
+(requirements.yml) по окружениям
+
+1. Создадим файлы environments/stage/requirements.yml и
+environments/prod/requirements.yml
+2. Добавим в них запись вида:
+```yml
+- src: jdauphant.nginx
+  version: v2.21.1
+```
+3. Установим роль
+```bash
+ansible-galaxy install -r environments/stage/requirements.yml
+```
+4. Комьюнити-роли не стоит коммитить в свой репозиторий, для
+этого добавим в .gitignore запись: jdauphant.nginx
+- для минимальной настройки проксирования
+необходимо добавить следующие переменные:
+```yml
+db_host: 10.140.0.2
+
+nginx_sites:
+  default:
+    - listen 80
+    - server_name "reddit"
+    - location / {
+         proxy_pass http://127.0.0.1:9292;
+      }
+```
+Добавим эти переменные в stage/group_vars/app и
+prod/group_vars/app
+
+- Самостоятельное задание
+- Добавить в конфигурацию Terraform открытие 80 порта для инстанса приложения.
+```tf
+
+
+resource "google_compute_firewall" "firewall_puma" {
+  name    = "allow-puma-default"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["9292","80"]
+  }
+source_ranges = ["0.0.0.0/0"]
+target_tags = ["reddit-app"]
+}
+```
+- Добавьте вызов роли jdauphant.nginx в плейбук app.yml
+```yml
+
+---
+- name: Configure App
+  hosts: app
+  become: true
+  vars:
+    db_host: ip_address
+  roles:
+    - app  
+    - jdauphant.nginx
+```
+- Применим  плейбук site.yml для окружения stage и проверям, что приложение доступно на 80 порту `ip_adderss` 
+
+#### Работа с Ansible Vault
+
+Подготовим плейбук для создания пользователей, пароль
+пользователей будем хранить в зашифрованном виде в файле
+credentials.yml:
+1. Создаим файл vault.key со произвольной строкой ключа
+в папке ~/.ansible/vault.key
+2. Изменим файл ansible.cfg, добавим опцию
+vault_password_file в секцию [defaults]
+```cfg
+[defaults]
+vault_password_file = ~/.ansible/vault.key
+```
+Добавим плейбук для создания пользователей - файл
+ansible/playbooks/users.yml
+```yml
+- name: Create users
+  hosts: all
+  become: true
+  vars_files:
+    - "{{ inventory_dir }}/credentials.yml"
+  tasks:
+    - name: create users
+      user:
+        name: "{{ item.key }}"
+        password: "{{ item.value.password|password_hash('sha512',
+ 65534|random(seed=inventory_hostname)|string) }}"
+        groups: "{{ item.value.groups | default(omit) }}"
+      with_dict: "{{ credentials.users }}"
+```
+Создадим файл с данными пользователей для каждого
+окружения
+- Файл для prod (ansible/environments/prod/credentials.yml):
+```yml
+
+credentials:
+        users:
+                admin:
+                        password: admin123
+                        groups: sudo
+```
+- Файл для stage (ansible/environments/stage/credentials.yml)
+```yml
+
+credentials:
+        users:
+                admin:
+                        password: qwerty123
+                        groups: sudo
+                        qauser:
+                                password: test123
+```
+1. Зашифруем файлы используя vault.key (используем
+одинаковый для всех окружений):
+```bash
+$ ansible-vault encrypt environments/prod/credentials.yml
+$ ansible-vault encrypt environments/stage/credentials.yml
+```
+2. Проверим содержимое файлов, убедитесь что они
+зашифрованы
+```yml
+
+$ANSIBLE_VAULT;1.1;AES256
+65373062643736386435363238626365363032303435653965353534646437653035383461346666
+6663303562323032616238356134346438343039323266360a646337653531343039303432666133
+39393530383264663839396435363763303965346464643363383132663761363564343265346463
+6531363733643131310a363931323030393931643632633162383238316137393937313166343630
+34313732613164636635616334373332623339313234393633633133663631306466623261323333
+33343766663461613238663833393962323937613139626334353764373062336438663139623230
+34386632353436653632383262333339396537633936633164323133626562633561633632663434
+39633930356664316332646461663736376234656630393136623933633437626132656234623738
+38303933663333643933363630313539393064646631663937323538346262613134316665313337
+32333837353230346331316439646538373632353737353339636664646165633731663838656661
+30323266623634363966656133626539373962646366356330356532373861636236623064616366
+30343139396163303562353161623336396630323139393932353039303336316561316533363137
+34636538326133316238366364356262613236303538336138643462343337323434383935636538
+66353430666461663833666535323936613232303234626637303138626632356136623730383466
+333135383063643161303434616637326430
+```
+3. Добавьте вызов плейбука в файл site.yml и выполните его
+для stage окружения:
+```
+---
+- import_playbook: db.yml
+- import_playbook: app.yml
+- import_playbook: deploy.yml
+- import_playbook: users.yml
+```
+- Проверим что пользователи созданы в системе.
+- Для проверки доступа по паролю изменим конфиг ssh
+```bash
+vi /etc/ssh/sshd_config
+
+PasswordAuthentication yes
+
+/etc/init.d/sshd restart
+```
+
