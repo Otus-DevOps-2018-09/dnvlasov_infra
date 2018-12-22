@@ -2037,3 +2037,436 @@ packer build  -var-file=packer/variables.json  packer/db.json
 
 packer build  -var-file=packer/variables.json  packer/app.json
 ```
+
+### ДЗ №10
+#### Ansible: работа с ролями и окружениями.
+- Создадим роли 
+```bash
+ansible-galaxy init roles/app
+ansible-galaxy init roles/db
+```
+Структура диектории  созданной  роли db
+```
+$tree db
+
+db
+├── defaults          # <-- Диектория для переменных по умолчанию
+│   └── main.yml
+├── files
+├── handlers
+│   └── main.yml
+├── meta              # <-- Информация о роли, создателе и зависимостях
+│   └── main.yml
+├── README.md
+├── tasks             # <-- Директоря для тасков
+│   └── main.yml
+├── templates
+│   └── mongod.conf.j2
+├── tests
+│   ├── inventory   
+│   └── test.yml
+└── vars              # <-- Директория для переменных, которые не должны 
+    └── main.yml      #     переопределятся пользователем
+
+6 directories, 8 files
+```
+
+- Скопируем  секцию tasks в сценарии плейбука ansible/db.yml
+и вставим в ее в файл в директории tasks роли db
+```yml
+Файл ansible/roles/db/tasks/main.yml
+
+---
+# tasks file for db
+- name: Show info about the env this host belongs to
+  debug: msg="This host is in {{ env }} environment!!!"
+
+- name: Change mongo config file
+  template:
+      src: mongod.conf.j2
+      dest: /etc/mongod.conf
+      mode: 0644
+  notify: restart mongod
+
+```
+Определяем хендлер в директории handlers роли
+```yml
+# handlers file for db
+- name: restart mongod
+  service: name=mongod state=restarted
+```
+Определим используеме в шаблоне переменные в секции переменных по умолчанию (файл
+ansible/roles/db/defaults/main.yml)
+```yml
+# defaults file for db
+mongo_port: 27017
+mongo_bind_ip: 127.0.0.1
+```
+#### Роль для приложения
+- Выполним команду ansible-galaxy init в папке roles/app
+- Скопируем в секцию tasks сценарий плейбука ansible/app.yml
+```yml
+ansible/roles/app/tasks/main.yml
+
+# tasks file for app
+- name: Add unit file for Puma
+  copy:
+    src: puma.service 
+    dest: /etc/systemd/system/puma.service
+  notify: reload puma
+
+- name: Add config for DB connection
+  template:
+      src: db_config.j2
+      dest: /home/appuser/db_config
+      owner: appuser
+      group: appuser
+- name: enable puma
+  systemd: name=puma enabled=yes
+```
+- Скопируем db_config.j2 из директории
+ansible/templates в директорию 
+ansible/roles/app/templates
+- Файлы ansible/files/puma.service в
+ansible/roles/app/files
+- Опишим хендлер соответствующий директории app
+```yml
+ansible/role/app/handlers/main.yml
+---
+# handlers file for app
+- name: reload puma
+  systemd: name=puma state=restarted
+```
+Также определим переменную по умолчанию подключения к MongoDB
+```yml
+ansible/role/app/defaults/main.yml  
+---
+# defaults file for app
+db_host: 127.0.0.1
+env: local
+```
+Удалим определение тасков и хендлеров в плейбуке ansible/app.yml
+```yml
+---
+- name: Configure App
+  hosts: app
+  become: true
+  vars:
+    db_host: 10.140.0.2
+  roles:
+    - app  
+ 
+```
+Пересоздадим окружение stage terraform
+```bash
+terraform destroy
+terraform apply --auto-approve=false
+```
+
+Запустим плейбуки
+```bash
+./d_invent.sh site.yml --check
+./d_invent.sh site.yml 
+```
+
+Проверим работу приложения
+`http://ip_address:9292`
+
+#### Окружение
+
+- Определим окружение по умолчанию
+```yml
+
+[defaults]
+inventory = ./environments/stage/inventory
+remote_user = appuser
+private_key_file = ~/.ssh/appuser
+host_key_checking = False
+```
+Ansible позволяет задавать  переменные для группы хостов.
+директория group_vars позволяет создавать файлы (имена, которых
+должны соответствовать названиям групп в инвентори файле) для
+определения переменных для группы хостов.
+- Создадим директорию group_vars в директориях наших
+окружений `nvironments/prod` и `environments/stage`.
+#### Конфигурация Stage
+- Зададим настройки окружения stage, используя групповые
+переменные:
+1. Создадим файлы `stage/group_vars/app` для определения
+переменных для группы хостов app, описанных в инвентори
+файле `stage/inventory`
+2. Скопируем в этот файл переменные, определенные в плейбуке
+`ansible/app.yml.`
+3. Также удалим определение переменных из самого плейбука
+`ansible/app.yml.`
+
+- Аналогичным образом определим переменные для группы
+хостов БД на окружении stage:
+
+1. Создадим файл `stage/group_vars/db` и скопируем в него
+содержимое переменные из плейбука `ansible/db.yml`
+2. Секцию определения переменных из самого плейбука
+`ansible/db.yml` удалим.
+
+- Создайте файл `ansible/environments/stage/group_vars/all`
+со следующим содержимым:
+```yml
+env: stage
+```
+#### Конфигурация Prod
+1. Для настройки окружения prod скопируйте файлы app, db, all из
+директории stage/group_vars в директорию prod/group_vars.
+2. В файле prod/group_vars/all измените значение env
+переменной на prod
+```yml
+env: prod
+```
+#### Вывод информации об окружении
+Для роли app в файле `ansible/roles/app/defaults/main.yml`:
+```yml
+---
+# defaults file for app
+db_host: 127.0.0.1
+env: local
+```
+
+Для роли db в файле `ansible/roles/db/defaults/main.yml`:
+```yml
+---
+# defaults file for db
+mongo_port: 27017
+mongo_bind_ip: 127.0.0.1
+env: local
+```
+
+#### Вывод информации об окружении
+Будем выводить информацию о том, в каком окружении
+находится конфигурируемый хост. Воспользуемся модулем debug
+для вывода значения переменной. Добавим следующий таск в
+начало наших ролей.
+- Для роли app (файл `ansible/roles/app/tasks/main.yml`):
+```yml
+---
+# tasks file for app
+- name: Show info about the env this host belongs to
+  debug:
+    msg: "This host is in {{ env }} environment!!!"
+```
+Добавим такой же таск в роль db (файл `ansible/roles/db/tasks/main.yml`)
+```yml
+---
+# tasks file for db
+- name: Show info about the env this host belongs to
+  debug: msg="This host is in {{ env }} environment!!!"
+```
+
+#### Улучшим файл ansible.cfg
+```cfg
+[defaults]
+inventory = ./environments/stage/inventory
+remote_user = appuser
+private_key_file = ~/.ssh/appuser
+host_key_checking = False
+retry_files_enabled = False
+roles_path = ./roles
+vault_password_file = ~/.ansible/vault.key
+[diff]
+always = True
+context = 5
+```
+#### Проверка работы с окружениями
+Для проверки пересоздадим инфраструктуру окружения stage,
+используя команды:
+```bash
+$ terraform destroy
+$ terraform apply -auto-approve=false
+```
+Теперь запустим Ansible...
+```bash
+$ ./d_invent.sh playbooks/site.yml --check
+$ ./d_invent.sh playbooks/site.yml
+```
+Проверим работу приложения
+`ip_address:9292`
+
+### Настройка Prod окружения
+
+Для проверки настройки prod окружения сначала удалим
+инфраструктуру окружения stage. Затем поднимем инфраструктуру
+для prod окружения.
+- Перед проверкой не забудьте изменить внешние IP-адреса
+инстансов в инвентори файле
+`ansible/environments/prod/inventory` и переменную
+`db_host` в `prod/group_vars/app`
+
+Если все сделано правильно, то получим примерно такой вывод
+команды ansible-playbook:
+```bash
+$ ansible-playbook -i environments/prod/inventory playbooks/site.yml --check
+$ ansible-playbook -i environments/prod/inventory playbooks/site.yml
+```
+Проверим работу приложения `ip_address:9292`
+
+#### Работа с Community-ролями
+Хорошей практикой является разделение зависимостей ролей
+(requirements.yml) по окружениям
+
+1. Создадим файлы environments/stage/requirements.yml и
+environments/prod/requirements.yml
+2. Добавим в них запись вида:
+```yml
+- src: jdauphant.nginx
+  version: v2.21.1
+```
+3. Установим роль
+```bash
+ansible-galaxy install -r environments/stage/requirements.yml
+```
+4. Комьюнити-роли не стоит коммитить в свой репозиторий, для
+этого добавим в .gitignore запись: jdauphant.nginx
+- для минимальной настройки проксирования
+необходимо добавить следующие переменные:
+```yml
+db_host: 10.140.0.2
+
+nginx_sites:
+  default:
+    - listen 80
+    - server_name "reddit"
+    - location / {
+         proxy_pass http://127.0.0.1:9292;
+      }
+```
+Добавим эти переменные в stage/group_vars/app и
+prod/group_vars/app
+
+- Самостоятельное задание
+- Добавить в конфигурацию Terraform открытие 80 порта для инстанса приложения.
+```tf
+
+
+resource "google_compute_firewall" "firewall_puma" {
+  name    = "allow-puma-default"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["9292","80"]
+  }
+source_ranges = ["0.0.0.0/0"]
+target_tags = ["reddit-app"]
+}
+```
+- Добавьте вызов роли jdauphant.nginx в плейбук app.yml
+```yml
+
+---
+- name: Configure App
+  hosts: app
+  become: true
+  vars:
+    db_host: ip_address
+  roles:
+    - app  
+    - jdauphant.nginx
+```
+- Применим  плейбук site.yml для окружения stage и проверям, что приложение доступно на 80 порту `ip_adderss` 
+
+#### Работа с Ansible Vault
+
+Подготовим плейбук для создания пользователей, пароль
+пользователей будем хранить в зашифрованном виде в файле
+credentials.yml:
+1. Создаим файл vault.key со произвольной строкой ключа
+в папке ~/.ansible/vault.key
+2. Изменим файл ansible.cfg, добавим опцию
+vault_password_file в секцию [defaults]
+```cfg
+[defaults]
+vault_password_file = ~/.ansible/vault.key
+```
+Добавим плейбук для создания пользователей - файл
+ansible/playbooks/users.yml
+```yml
+- name: Create users
+  hosts: all
+  become: true
+  vars_files:
+    - "{{ inventory_dir }}/credentials.yml"
+  tasks:
+    - name: create users
+      user:
+        name: "{{ item.key }}"
+        password: "{{ item.value.password|password_hash('sha512',
+ 65534|random(seed=inventory_hostname)|string) }}"
+        groups: "{{ item.value.groups | default(omit) }}"
+      with_dict: "{{ credentials.users }}"
+```
+Создадим файл с данными пользователей для каждого
+окружения
+- Файл для prod (ansible/environments/prod/credentials.yml):
+```yml
+
+credentials:
+        users:
+                admin:
+                        password: admin123
+                        groups: sudo
+```
+- Файл для stage (ansible/environments/stage/credentials.yml)
+```yml
+
+credentials:
+        users:
+                admin:
+                        password: qwerty123
+                        groups: sudo
+                        qauser:
+                                password: test123
+```
+1. Зашифруем файлы используя vault.key (используем
+одинаковый для всех окружений):
+```bash
+$ ansible-vault encrypt environments/prod/credentials.yml
+$ ansible-vault encrypt environments/stage/credentials.yml
+```
+2. Проверим содержимое файлов, убедитесь что они
+зашифрованы
+```yml
+
+$ANSIBLE_VAULT;1.1;AES256
+65373062643736386435363238626365363032303435653965353534646437653035383461346666
+6663303562323032616238356134346438343039323266360a646337653531343039303432666133
+39393530383264663839396435363763303965346464643363383132663761363564343265346463
+6531363733643131310a363931323030393931643632633162383238316137393937313166343630
+34313732613164636635616334373332623339313234393633633133663631306466623261323333
+33343766663461613238663833393962323937613139626334353764373062336438663139623230
+34386632353436653632383262333339396537633936633164323133626562633561633632663434
+39633930356664316332646461663736376234656630393136623933633437626132656234623738
+38303933663333643933363630313539393064646631663937323538346262613134316665313337
+32333837353230346331316439646538373632353737353339636664646165633731663838656661
+30323266623634363966656133626539373962646366356330356532373861636236623064616366
+30343139396163303562353161623336396630323139393932353039303336316561316533363137
+34636538326133316238366364356262613236303538336138643462343337323434383935636538
+66353430666461663833666535323936613232303234626637303138626632356136623730383466
+333135383063643161303434616637326430
+```
+3. Добавьте вызов плейбука в файл site.yml и выполните его
+для stage окружения:
+```
+---
+- import_playbook: db.yml
+- import_playbook: app.yml
+- import_playbook: deploy.yml
+- import_playbook: users.yml
+```
+- Проверим что пользователи созданы в системе.
+- Для проверки доступа по паролю изменим конфиг ssh
+```bash
+vi /etc/ssh/sshd_config
+
+PasswordAuthentication yes
+
+/etc/init.d/sshd restart
+```
+
