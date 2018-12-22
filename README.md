@@ -975,29 +975,6 @@ terraform.tfvars
 zone = "zone name"
 ```
 ### ДЗ №7
-<<<<<<< HEAD
- Определим ресурс файервола.
- ```
- resource "google_compute_firewall" "firewall_ssh" { name = "default-allow-ssh"
- network = "default"
- allow {
- protocol = "tcp" ports = ["22"]
- }
- source_ranges = ["0.0.0.0/0"] }
-```
- Выполним команду применения изменений:
-...
-* google_compute_firewall.firewall_ssh: 1 error(s) occurred:
-```
- $ terraform apply
- ```
- google_compute_instance.app: Refreshing state... (ID: reddit-app)
-
-*google_compute_firewall.firewall_ssh: Error creating firewall: googleapi: Error 409:
-The resource 'projects/infra-179014/global/firewalls/default-allow-ssh' already exists,
-alreadyExists
-
-=======
 Определим ресурс файервола.
 ```
 resource "google_compute_firewall" "firewall_ssh" { name = "default-allow-ssh"
@@ -1015,7 +992,6 @@ google_compute_instance.app: Refreshing state... (ID: reddit-app)
 
 *google_compute_firewall.firewall_ssh: Error creating firewall: googleapi: Error 409: The resource 'projects/infra-179014/global/firewalls/default-allow-ssh' already exists, alreadyExists
 ```
->>>>>>> ansible-1
 Правило firewall/default-allow-ssh уже существует.
 
 Импортируем существующую инфраструктуру в Terraform
@@ -1028,55 +1004,27 @@ Imported google_compute_firewall (ID: default-allow-ssh)
 google_compute_firewall.firewall_ssh: Refreshing state... (ID: default-allow-ssh)
 Import successful!
 ```
-<<<<<<< HEAD
-
- Ресурс IP адреса
-
- Зададим IP для инстанса с приложением в виде внешнего ресурса. Для этого определим ресурс google_compute_address в конфигурационном файле main.tf
-=======
 #### Ресурс IP адреса
 
 Зададим IP для инстанса с приложением в виде внешнего ресурса. Для этого определим ресурс google_compute_address в конфигурационном файле main.tf
->>>>>>> ansible-1
 ```
 resource "google_compute_address" "app_ip" { name = "reddit-app-ip"
 }
 ```
-<<<<<<< HEAD
- Ссылаемся на атрибуты другого ресурса
- Для того чтобы использовать созданный IP адрес в
-нашем ресурсе VM нам необходимо сослаться на
-атрибуты ресурса, который этот IP создает, внутри
-конфигурации ресурса VM. В конфигурации ресурса VM
-определите, IP адрес для создаваемого инстанса.
-=======
 Ссылаемся на атрибуты другого ресурса Для того чтобы использовать созданный IP адрес в нашем ресурсе VM нам необходимо сослаться на атрибуты ресурса, который этот IP создает, внутри конфигурации ресурса VM. В конфигурации ресурса VM определите, IP адрес для создаваемого инстанса.
->>>>>>> ansible-1
 ```
 network_interface { network = "default" access_config = {
 nat_ip = "${google_compute_address.app_ip.address}" }
      15
 }
 ```
-<<<<<<< HEAD
-Неявная зависимость.
-
-Ссылку в одном ресурсе на атрибуты другого тераформ понимает как зависимость одного ресурса от другого. Это влияет на очередность создания и удаления ресурсов при применении изменений.
-Вновь пересоздадим все ресурсы и посмотрим на очередность создания ресурсов сейчас
-=======
 #### Неявная зависимость.
 
 Ссылку в одном ресурсе на атрибуты другого тераформ понимает как зависимость одного ресурса от другого. Это влияет на очередность создания и удаления ресурсов при применении изменений. Вновь пересоздадим все ресурсы и посмотрим на очередность создания ресурсов сейчас
->>>>>>> ansible-1
 ```
  $ terraform destroy
  $ terraform plan
  $ terraform apply
-<<<<<<< HEAD
- ```
- ```
-=======
->>>>>>> ansible-1
 google_compute_address.app_ip: Creating...
 google_compute_firewall.firewall_puma: Creating...
 google_compute_firewall.firewall_ssh: Creating...
@@ -1086,20 +1034,6 @@ google_compute_instance.app: Creating...
 ```
 Видим, что ресурс VM начал создаваться только после завершения создания IP адреса в результате неявной зависимости этих ресурсов.
 
-<<<<<<< HEAD
- Структуризация ресурсов
-  Несколько VM
-
-  Вынесем БД на отдельный инстанс VM. Для этого необходимо в директории packer, где содержатся ваши шаблоны для билда VM, создать два новых шаблона db.json и app.json. При помощи шаблона db.json должен собираться образ VM, содержащий установленную MongoDB. Шаблон app.json должен использоваться для сборки образа VM, с установленными Ruby. В качестве базового образа для создания образа возьмем ubuntu16.04.
-
-  Создадим две VM
-
-  Разобьем конфиг main.tf на несколько конфигов. Создадим файл app.tf, куда вынесем конфигурацию для VM с приложением.
-
-Образ приложения. 
-
-  variables.tf:
-=======
 #### Структуризация ресурсов Несколько VM
 
 Вынесем БД на отдельный инстанс VM. Для этого необходимо в директории packer, где содержатся ваши шаблоны для билда VM, создать два новых шаблона db.json и app.json. При помощи шаблона db.json должен собираться образ VM, содержащий установленную MongoDB. Шаблон app.json должен использоваться для сборки образа VM, с установленными Ruby. В качестве базового образа для создания образа возьмем ubuntu16.04.
@@ -1111,17 +1045,12 @@ google_compute_instance.app: Creating...
 Образ приложения.
 
 variables.tf:
->>>>>>> ansible-1
 ```
 variable app_disk_image {
 description = "Disk image for reddit app" default = "reddit-app-base"
 }
 ```
-<<<<<<< HEAD
- app.tf
-=======
 app.tf
->>>>>>> ansible-1
 ```
 resource "google_compute_instance" "app" { name = "reddit-app"
 machine_type = "g1-small"
@@ -1149,10 +1078,6 @@ protocol = "tcp" ports = ["9292"]
 source_ranges = ["0.0.0.0/0"] target_tags = ["reddit-app"]
 }
 ```
-<<<<<<< HEAD
-
-=======
->>>>>>> ansible-1
 Объявить переменную в variables.tf
 ```
 variable db_disk_image {
@@ -1174,37 +1099,19 @@ metadata {
 ssh-keys = "appuser:${file(var.public_key_path)}" }
 }
 ```
-<<<<<<< HEAD
-
 Добавим в db.tf правило файервола, которое даст доступ приложению к БД
-
-=======
-Добавим в db.tf правило файервола, которое даст доступ приложению к БД
->>>>>>> ansible-1
 ```
 resource "google_compute_firewall" "firewall_mongo" { name = "allow-mongo-default"
 network = "default"
 allow {
 protocol = "tcp" ports = ["27017"]
 }
-<<<<<<< HEAD
-# правило применимо к инстансам с тегом ...
-target_tags = ["reddit-db"]
-# порт будет доступен только для инстансов с тегом ... source_tags = ["reddit-app"]
-}
-```
-
-Создадим файл vpc.tf в который вынесем правило
-фаервола для ssh доступа, которое применимо для
-всех инстансов нашей сети.
-=======
 ```
  правило применимо к инстансам с тегом ...
 ```target_tags = ["reddit-db"]```
  порт будет доступен только для инстансов с тегом ... ```source_tags = ["reddit-app"]
 }```
 Создадим файл vpc.tf в который вынесем правило фаервола для ssh доступа, которое применимо для всех инстансов нашей сети.
->>>>>>> ansible-1
 ```
 resource "google_compute_firewall" "firewall_ssh" { name = "default-allow-ssh"
 network = "default"
@@ -1212,41 +1119,22 @@ allow {
 protocol = "tcp" ports = ["22"]
 }
 source_ranges = ["0.0.0.0/0"] }
-<<<<<<< HEAD
-```
-В файле main.tf остаться только определение провайдера:
-```
-=======
 В файле main.tf остаться только определение провайдера:
 
->>>>>>> ansible-1
 provider "google" {
 version = "1.4.0"
 project = "${var.project}" region = "${var.region}"
 }
 ```
-<<<<<<< HEAD
-Модули
-=======
 #### Модули
->>>>>>> ansible-1
 
 Разбиваем нашу конфигурацию на отдельные конфиг файлы.
 
 Внутри директории terraform создайте директорию modules, в которой мы будет определять модули.
 
-<<<<<<< HEAD
- DB module
-Внутри директории modules создайте директорию db, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf.
-Скопируем содержимое db.tf, который мы создали ранее, в modules/db/main.tf.
-Затем определим переменные, которые у нас используются в db.tf и объявляются в variables.tf в файл переменных модуля modules/db/variables.tf
-```
-
-=======
 DB module Внутри директории modules создайте директорию db, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf. Скопируем содержимое db.tf, который мы создали ранее, в modules/db/main.tf. Затем определим переменные, которые у нас используются в db.tf и объявляются в variables.tf в файл переменных модуля modules/db/variables.tf
 
 ```
->>>>>>> ansible-1
 variable public_key_path {
 description = "Path to the public key used to connect to instance"
 }
@@ -1255,20 +1143,6 @@ variable zone { description = "Zone"
 variable db_disk_image {
 description = "Disk image for reddit db" default = "reddit-db-base"
 ```
-<<<<<<< HEAD
-
- App module
-
- Создадим по аналогии модуль приложения: в директории modules создадим директорию app, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf.
-
- Скопируем содержимое app.tf, который мы создали ранее, в modules/app/main.tf
-
- Затем определим переменные, которые у нас
-используются в app.tf и объявляются в variables.tf в файл
-переменных модуля modules/app/variables.tf
-
- ```
-=======
 App module
 
 Создадим по аналогии модуль приложения: в директории modules создадим директорию app, в которой создайте три привычных нам файла main.tf, variables.tf, outputs.tf.
@@ -1277,7 +1151,6 @@ App module
 
 Затем определим переменные, которые у нас используются в app.tf и объявляются в variables.tf в файл переменных модуля modules/app/variables.tf
 ```
->>>>>>> ansible-1
 variable public_key_path {
 description = "Path to the public key used to connect to instance"
 }
@@ -1295,18 +1168,6 @@ value = "${google_compute_instance.app.network_interface.0.access_config.
 0.assigned_nat_ip}"
 }
 ```
-<<<<<<< HEAD
- Проверим работу модулей
-
- В файл main.tf, где у нас определен провайдер вставим секции вызова созданных нами модулей
-
-  terraform/main.tf
-  ```
-...
-module "app" {
-Источник, откуда копировать модуль
- source = "modules/app" public_key_path = "${var.public_key_path}" zone = "${var.zone}" app_disk_image = "${var.app_disk_image}"
-=======
 Проверим работу модулей
 
 В файл main.tf, где у нас определен провайдер вставим секции вызова созданных нами модулей
@@ -1317,52 +1178,29 @@ terraform/main.tf
 module "app" {
 Источник, откуда копировать модуль
 source = "modules/app" public_key_path = "${var.public_key_path}" zone = "${var.zone}" app_disk_image = "${var.app_disk_image}"
->>>>>>> ansible-1
 }
 module "db" {
 source = "modules/db" public_key_path = "${var.public_key_path}" zone = "${var.zone}"
 }
 db_disk_image
 ```
-<<<<<<< HEAD
-
-=======
->>>>>>> ansible-1
 Используем команду для загрузки модулей. В директории terraform:
 ```
 $ terraform get
 ```
-<<<<<<< HEAD
-Модули будут загружены в директорию `.terraform`, в
-которой уже содержится провайдер 
-
- Получаем output переменные из модуля
-
- В созданном нами модуле app мы определили выходную переменную для внешнего IP инстанса. Чтобы получить значение этой переменной, переопределим ее
-=======
 Модули будут загружены в директорию .terraform, в которой уже содержится провайдер
 
 Получаем output переменные из модуля
 
 В созданном нами модуле app мы определили выходную переменную для внешнего IP инстанса. Чтобы получить значение этой переменной, переопределим ее
->>>>>>> ansible-1
 ```
 output "app_external_ip" {
 value = "${module.app.app_external_ip}"
 }
 ```
-<<<<<<< HEAD
- Самостоятельное задание
-
- Аналогично предыдущим модулям создайте модуль vpc, в котором определите настройки файервола в рамках сети.
-Используйте созданный модуль в основной конфигурации terraform/main.tf
-
-
-=======
 Самостоятельное задание
 
 Аналогично предыдущим модулям создайте модуль vpc, в котором определите настройки файервола в рамках сети. Используйте созданный модуль в основной конфигурации terraform/main.tf
->>>>>>> ansible-1
 ```
 resource "google_compute_firewall" "firewall_ssh" {
   name    = "default-allow-ssh"
@@ -1374,61 +1212,13 @@ resource "google_compute_firewall" "firewall_ssh" {
   source_ranges = "${var.source_ranges}"
 }
 ```
-<<<<<<< HEAD
-
- Теперь мы можем задавать диапазоны IP адресов для правила файервола при вызове модуля.
-terraform/main.tf
-=======
 Теперь мы можем задавать диапазоны IP адресов для правила файервола при вызове модуля. terraform/main.tf
->>>>>>> ansible-1
 ```
 ...
 module "vpc" {
 source = "modules/vpc"
 source_ranges = ["внешний ip"] }
 ```
-<<<<<<< HEAD
- Самостоятельное задание
-Проверьте работу параметризованного в прошлом слайде модуля vpc.
-1. Введите в source_ranges не ваш IP адрес, примените правило и проверьте отсутствие соединения к обоим хостам по ssh. Проконтролируйте, как изменилось правило файрвола в веб консоли.
- 
- Нет доступа к хостам app и db в фильтрах   измениля ip адрес   
-
-2. Введите в source_ranges ваш IP адрес, примените правило и проверьте наличие соединения к обоим хостам по ssh.
-3. Верните 0.0.0.0/0 в source_ranges.
-
- Переиспользование модулей
-
-  Создадим Stage & Prod
-
-  В директории terrafrom создайте две директории: stage и prod. Скопируйте файлы main.tf, variables.tf, outputs.tf, terraform.tfvars из директории terraform в каждую из созданных директорий. Поменяйте пути к модулям в main.tf на "../modules/xxx" вместо "modules/xxx".
-
-  Инфраструктура в обоих окружениях будет идентична, однако будет иметь небольшие различия: мы откроем SSH доступ для всех IP адресов в окружении Stage, а в окружении Prod откроем доступ только для своего IP.
-
-  terraform/stage/main.tf
-  ```
-provider "google" {
-  version = "1.4.0"
-  project = "${var.project}"
-  region  = "${var.region}"
-}
-module "app" {
-  source          = "../modules/app"
-  public_key_path = "${var.public_key_path}"
-  app_disk_image  = "${var.app_disk_image}"
-}
-module "db" {
-  source          = "../modules/db"
-  public_key_path = "${var.public_key_path}"
-  db_disk_image  = "${var.db_disk_image}"
-}
-module "vpc" {
-  source          = "../modules/vpc"
-  source_ranges = ["0.0.0.0/0"]
-}
-```
- terraform/prod/main.tf
-=======
 Самостоятельное задание Проверьте работу параметризованного в прошлом слайде модуля vpc.
 
 Введите в source_ranges не ваш IP адрес, примените правило и проверьте отсутствие соединения к обоим хостам по ssh. Проконтролируйте, как изменилось правило файрвола в веб консоли.
@@ -1467,7 +1257,6 @@ source_ranges = ["0.0.0.0/0"]
 }
 ```
 terraform/prod/main.tf
->>>>>>> ansible-1
 ```
 provider "google" {
   version = "1.4.0"
@@ -1489,17 +1278,6 @@ module "vpc" {
   source_ranges = ["82.155.222.156/32"]
 }
 ```
-<<<<<<< HEAD
-
- Работа с реестром модулей.
-
-Давайте попробуем воспользоваться модулем storage-bucket
-для создания бакета в сервисе Storage.
-
-Создайте в папке terraform файл 
-```
-storage-bucket.tf с таким содержанием:
-=======
 #### Работа с реестром модулей.
 
 Давайте попробуем воспользоваться модулем storage-bucket для создания бакета в сервисе Storage.
@@ -1508,7 +1286,6 @@ storage-bucket.tf с таким содержанием:
 
 storage-bucket.tf с таким содержанием:
  ```
->>>>>>> ansible-1
  provider "google" { version = "1.4.0"
 project = "${var.project}" region = "${var.region}"
 }
@@ -1521,22 +1298,13 @@ output storage-bucket_url {
 value = "${module.storage-bucket.url}"
 }
 ```
-<<<<<<< HEAD
- Работа с реестром модулей
-
- Проверьте с помощью gsutil или веб консоли, что бакеты создались и доступны.
-=======
 Работа с реестром модулей
 
 Проверьте с помощью gsutil или веб консоли, что бакеты создались и доступны.
->>>>>>> ansible-1
 ```
 gsutil ls
 gs://prod-storage-bucket/
 gs://stage-storage-bucket/
-<<<<<<< HEAD
-```
-=======
 ```
 
 
@@ -1736,4 +1504,969 @@ insufficient you can add warn=False to this command task or set command_warnings
 appserver | CHANGED | rc=0 >>
 
 ```
->>>>>>> ansible-1
+
+
+### ДЗ №9
+Деплой и управление конфигурацией с Ansible.
+#### Плейбуки
+- Создание плейбука
+Создадим плейбук для управления конфигурацией
+и деплоя нашего приложения. Для этого создайте
+файл reddit_app.yml в директории ansible. 
+добавим в файл .gitignore следующую
+строку:  *.retry  
+- Сценарий для монго
+
+ansible/reddit_app.yml
+```yml
+---
+- name: Configure hosts & deploy application
+  hosts: all
+  tasks:
+   - name: Change mongo config file
+     become: true
+     template:
+       src: templates/mongod.conf.j2
+       dest: /etc/mongod.conf
+       mode: 0644
+       tags: db-tag
+
+```
+Для каждого из наших тасков будем определять тег, чтобы
+иметь возможность запускать отдельные таски, имеющие
+определенный тег, а не запускать таски все сразу. 
+- Шаблон конфига MongoDB
+В директории ansibe/templates создадим файл
+mongod.conf.j2 
+Вставим в данный шаблон параметризованный
+конфиг для MongoDB 
+```j2
+# Where and how to store data.
+storage:
+  dbPath: /var/lib/mongodb
+  journal:
+    enabled: true
+
+# where to write logging data.
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+# network interfaces
+net:
+  port: {{ mongo_port | default('27017') }}
+  bindIp: {{ mongo_bind_ip }}
+  ```
+- Пробный прогон
+```bash
+ansible-playbook reddit_app.yml --check --limit db
+```
+Видим ошибку: ```'mongo_bind_ip'``` is undefined"  переменная,
+которая используется в шаблоне не определена
+- Определение переменных
+Определим значения переменных в нашем плейбуке
+```yml
+---
+- name: Configure hosts & deploy application
+  hosts: all
+  vars:
+    mongo_bind_ip: 0.0.0.0
+  tasks:
+    - name: Change mongo config file
+      become: true
+      template:
+        src: templates/mongod.conf.j2
+        dest: /etc/mongod.conf
+        mode: 0644
+        tags: db-tag
+ ```
+- Повторим проверку плейбука
+```bash
+ ansible-playbook reddit_app.yml --check --limit db
+ ```
+Проверка  прошла успешно
+- Handlers
+Handlers похожи на таски, однако запускаются
+только по оповещению других тасков. Таск шлет
+оповещение handler-у в случае, когда он меняет
+свое состояние. По этой причине handlers удобно
+использовать для перезапуска сервисов
+- Добавим handlers
+
+- ansible/reddit_app.yml
+```yml
+---
+- name: Configure hosts & deploy application
+  hosts: all
+  vars:
+    mongo_bind_ip: 0.0.0.0
+  tasks:
+   - name: Change mongo config file
+     become: true
+     template:
+         src: templates/mongod.conf.j2
+         dest: /etc/mongod.conf
+         mode: 0644
+         tags: db-tag
+     notify: restart mongod
+  handlers:
+  - name: restart mongod
+    become: true
+    service: name=mongod state=restarted
+ ```
+ Применим плейбук
+- Настройка инстанса приложения
+Создадим директорию files внутри директории
+ansible и добавьте туда файл puma.service файл. 
+Добавим в наш сценарий таск для копирования unit файла на хост приложения. 
+```yml
+ tasks:
+ - name: Change mongo config file
+...
+ - name: Add unit file for Puma
+   become: true
+   copy:
+      src: files/puma.service
+      dest: /etc/systemd/system/puma.service
+      tags: app-tag
+   notify: reload puma
+ - name: enable puma
+   become: true
+  systemd: name=puma enabled=yes
+  tags: app-tag
+ ```
+ Не забудем добавить новый handler, который
+указывает systemd, что unit для сервиса изменился и
+его следует перечитать
+```yml
+ handlers:
+ - name: restart mongod
+ become: true
+ service: name=mongod state=restarted
+
+ - name: reload puma
+ become: true
+ systemd: name=puma state=restarted 
+ ```
+  В unit файле добавим строку чтения
+переменных окружения из файла:
+```yml
+EnvironmentFile=/home/appuser/db_config 
+```
+Создадим шаблон в директории ```templates/
+db_config.j2``` куда добавим следующую строку: 
+```yml
+DATABASE_URL={{ db_host }}
+```
+Добавим таск для копирования созданного шаблона: 
+```yml
+- name: Add unit file for Puma
+...
+- name: Add config for DB connection
+  template:
+    src: templates/db_config.j2
+    dest: /home/appuser/db_config
+    tags: app-tag
+- name: enable puma
+  become: true
+  systemd: name=puma enabled=yes
+  tags: app-tag
+ ```
+ И не забудем определить переменную db_host
+ ```yml
+ ---
+- name: Configure hosts & deploy application
+  hosts: all
+  vars:
+    mongo_bind_ip: 0.0.0.0
+    db_host: 10.132.0.2
+  tasks:
+
+```
+Пробный прогон: 
+```bash
+$ ansible-playbook reddit_app.yml --check --limit
+app --tags app-tag 
+```
+Применим наши таски плейбука с тегом app-tag для
+группы хостов app:
+```bash
+$ ansible-playbook reddit_app.yml --limit app --tags
+app-tag 
+```
+### Деплой
+ Добавим еще несколько тасков в сценарий нашего
+плейбука
+Используем модули git и bundle для клонирования
+последней версии кода нашего приложения и
+установки зависимых гемов через bundle. 
+ansible/reddit_app.yml
+
+```yml
+- name: Fetch the latest version of   application code
+ git:
+   repo:'https://github.com/express42/reddit.git'
+   dest: /home/appuser/reddit
+   version: monolith
+   tags: deploy-tag
+ notify: reload puma
+ - name: Bundle install
+   bundler:
+    state: present
+    chdir: /home/appuser/reddit
+   tags: deploy-tag 
+```
+- Выполняем деплой
+```bash
+$ ansible-playbook reddit_app.yml --check --limit app --tags deploy-tag
+$ ansible-playbook reddit_app.yml --limit app --tags deploy-tag 
+```
+Проверяем работу приложения
+```ip_address:9292```
+
+#### Один плейбук, несколько сценариев
+ 
+ - Сценарий для MongoDB
+ Создадим новый файл reddit_app2.yml в
+директории ansible. Определим в нем несколько
+сценариев (plays), в которые объединим задачи,
+относящиеся к используемым в плейбуке тегам
+- Определим отдельный сценарий для управления
+конфигурацией MongoDB
+```yml
+---
+- name: Configure hosts & deploy application
+  hosts: all
+  vars:
+    mongo_bind_ip: 0.0.0.0
+  tasks:
+    - name: Change mongo config file
+      become: true
+      template:
+        src: templates/mongod.conf.j2
+        dest: /etc/mongod.conf
+        mode: 0644
+      tags: db-tag
+      notify: restart mongod
+
+  handlers:
+  - name: restart mongod
+    become: true
+    service: name=mongod state=restarted
+```
+Изменим словесное описание, укажем нужную
+группу хостов. Уберем теги из тасков и определим
+тег на уровне сценария, чтобы мы могли запускать
+сценарий, используя тег.
+Вынесем   ```become: true```  на уровень сценария.
+```yml
+---
+- name: Configure MongoDB
+  hosts: db
+  tags: db-tag
+  become: true
+  vars:
+    mongo_bind_ip: 0.0.0.0
+  tasks:
+    - name: Change mongo config file
+      template:
+        src: templates/mongod.conf.j2
+        dest: /etc/mongod.conf
+        mode: 0644
+      notify: restart mongod
+
+  handlers:
+  - name: restart mongod
+    service: name=mongod state=restarted
+```
+#### Сценарий для App
+
+Для настройки инстанса приложения
+ пометим тегом app-tag. Вставим скопированную
+информацию в reddit_app2.yml следом за сценарием для MongoDB.
+```yml
+- name: Configure App
+  hosts: app
+  tags: app-tag
+  become: true
+  vars:
+    db_host: 10.132.0.2
+  tasks:
+   - name: Add unit file for Puma
+    copy:
+      src: files/puma.service
+      dest: /etc/systemd/system/puma.service
+    notify: reload puma
+   - name: Add config for DB connection
+     template:
+        src: templates/db_config.j2
+        dest: /home/appuser/db_config
+        owner: appuser
+        group: appuser
+   - name: enable puma
+     systemd: name=puma enabled=yes
+  handlers:
+   - name: reload puma
+     systemd: name=puma state=restarted
+```
+- Пересоздадим инфраструктуру
+
+```bash
+$ terraform destroy
+$ terraform apply -auto-approve=false
+```
+- Проверим работу сценариев
+db-tag
+```bash
+$ ansible-playbook reddit_app2.yml --tags db-tag --check
+$ ansible-playbook reddit_app2.yml --tags db-tag 
+```
+app-tag
+```bash
+$ ansible-playbook reddit_app2.yml --tags app-tag --check
+$ ansible-playbook reddit_app2.yml --tags app-tag 
+```
+#### Сценарий для деплоя
+```yml
+- name: Deploy App
+  hosts: app
+  tags: deploy-tag
+  tasks:
+    - name: Fetch the latest version of application code
+      git:
+        repo: 'https://github.com/express42/reddit.git'
+        dest: /home/appuser/reddit
+        version: monolith
+      notify: restart puma
+
+    - name: bundle install
+      bundler:
+        state: present
+        chdir: /home/appuser/reddit
+
+  handlers:
+  - name: restart puma
+    become: true
+    systemd: name=puma state=restarted
+```
+Проверка сценария 
+```bash
+ $ ansible-playbook reddit_app2.yml --tags deploy-tag --check
+ $ ansible-playbook reddit_app2.yml --tags deploy-tag 
+```
+ проверка   ```  http://ip_address:9292```
+
+### cd 
+В директории ansible создадим три новых файла app.yml, db.yml, deploy.yml. 
+mkdir {app,db,deploy}.yml
+Заодно переименуем наши предыдущие плейбуки:
+- reddit_app.yml -> reddit_app_one_play.yml
+- reddit_app2.yml-> reddit_app_multiple_plays.yml
+
+Из файла reddit_app_multiple_plays.yml скопируем
+сценарий, относящийся к настройке БД, в файл
+db.yml, удалим тег определенный в сценарии.
+
+#### db.yml 
+```yml
+---
+- name: Configure MongoDB
+  hosts: db
+  become: true
+  vars:
+     mongo_bind_ip: 0.0.0.0
+  tasks:
+    - name: Change mongo config file
+      template:
+          src: templates/mongod.conf.j2
+          dest: /etc/mongod.conf
+          mode: 0644
+      notify: restart mongod
+  handlers:
+  - name: restart mongod
+    service: name=mongod state=restarted
+```
+#### app.yml
+```yml
+---
+- name: Configure App
+  hosts: app
+  tags: app-tag <-- удалить tag
+  become: true
+  vars:
+    db_host: 10.132.0.2
+  tasks:
+   - name: Add unit file for Puma
+       copy:
+       src: files/puma.service
+       dest: /etc/systemd/system/puma.service
+     notify: reload puma
+   - name: Add config for DB connection
+    template:
+        src: templates/db_config.j2
+        dest: /home/appuser/db_config
+        owner: appuser
+        group: appuser
+   - name: enable puma
+    systemd: name=puma enabled=yes
+  handlers:
+   - name: reload puma
+   systemd: name=puma state=restarted
+ ```
+ #### deploy.yml
+ ```yml
+ - name: Deploy App
+  hosts: app
+  tasks:
+    - name: Fetch the latest version of application code
+      git:
+        repo: 'https://github.com/express42/reddit.git'
+        dest: /home/appuser/reddit
+        version: monolith
+      notify: restart puma
+
+    - name: bundle install
+      bundler:
+        state: present
+        chdir: /home/appuser/reddit
+
+  handlers:
+  - name: restart puma
+    become: true
+    systemd: name=puma state=restarted
+```
+Создадим файл site.yml в директории ansible, в котором
+опишем управление конфигурацией всей нашей
+инфраструктуры. Это будет нашим главным плейбуком,
+который будет включать в себя все остальные
+#### site.yml
+```yml
+---
+- import_playbook: db.yml
+- import_playbook: app.yml
+- import_playbook: deploy.yml 
+```
+#### Пересоздадим инфраструктуру
+Исрользуем окружение stage
+```bash
+$ terraform destroy
+$ terraform apply -auto-approve=false
+```
+#### Проверим работу плейбуков
+```bash
+$ ansible-playbook site.yml --check
+$ ansible-playbook site.yml
+```
+#### Проверим работу приложения
+http://ip_address:9292
+
+### Изменим провижининг в Packer
+
+Создадим  плейбуки
+ansible/packer_app.yml 
+
+```
+---
+- name: Install Ruby && Bundler
+  hosts: all
+  become: true
+  tasks:
+    - name: Install ruby and rubygems and required packages
+      apt: "name={{ item }} state=present"
+      with_items:
+           - ruby-full
+           - ruby-bundler
+           - build-essential
+```
+ansible/packer_db.yml.
+```
+---
+- name: Install MongoDB 3.2
+  hosts: all
+  become: true
+  tasks:
+    - name: Add APT key
+      apt_key:
+         id: EA312927
+         keyserver: keyserver.ubuntu.com
+
+    - name: Add APT repository
+      apt_repository:
+         repo: deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse
+         state: present
+
+    - name: Install mongodb package
+      apt:
+       name: mongodb-org
+       state: present
+
+    - name: Configure service supervisor
+      systemd:
+       name: mongod
+       enabled: yes
+```
+#### Интегрируем Ansible в Packer
+Заменим секцию Provision в образе packer/app.json на Ansible 
+```json
+{
+          "provisioners": [
+              {
+              "type": "ansible",
+              "playbook_file":"ansible/packer_app.yml"
+              }
+       ]
+}
+```
+Такие же изменения выполним и для packer/db.json
+```json
+{
+    
+      "provisioners": [
+              {
+              "type": "ansible",
+              "playbook_file":"ansible/packer_db.yml"
+          }
+       ]
+}
+```
+Соберем образы 
+db и app
+```bash
+packer build  -var-file=packer/variables.json  packer/db.json
+
+packer build  -var-file=packer/variables.json  packer/app.json
+```
+
+### ДЗ №10
+#### Ansible: работа с ролями и окружениями.
+- Создадим роли 
+```bash
+ansible-galaxy init roles/app
+ansible-galaxy init roles/db
+```
+Структура диектории  созданной  роли db
+```
+$tree db
+
+db
+├── defaults          # <-- Диектория для переменных по умолчанию
+│   └── main.yml
+├── files
+├── handlers
+│   └── main.yml
+├── meta              # <-- Информация о роли, создателе и зависимостях
+│   └── main.yml
+├── README.md
+├── tasks             # <-- Директоря для тасков
+│   └── main.yml
+├── templates
+│   └── mongod.conf.j2
+├── tests
+│   ├── inventory   
+│   └── test.yml
+└── vars              # <-- Директория для переменных, которые не должны 
+    └── main.yml      #     переопределятся пользователем
+
+6 directories, 8 files
+```
+
+- Скопируем  секцию tasks в сценарии плейбука ansible/db.yml
+и вставим в ее в файл в директории tasks роли db
+```yml
+Файл ansible/roles/db/tasks/main.yml
+
+---
+# tasks file for db
+- name: Show info about the env this host belongs to
+  debug: msg="This host is in {{ env }} environment!!!"
+
+- name: Change mongo config file
+  template:
+      src: mongod.conf.j2
+      dest: /etc/mongod.conf
+      mode: 0644
+  notify: restart mongod
+
+```
+Определяем хендлер в директории handlers роли
+```yml
+# handlers file for db
+- name: restart mongod
+  service: name=mongod state=restarted
+```
+Определим используеме в шаблоне переменные в секции переменных по умолчанию (файл
+ansible/roles/db/defaults/main.yml)
+```yml
+# defaults file for db
+mongo_port: 27017
+mongo_bind_ip: 127.0.0.1
+```
+#### Роль для приложения
+- Выполним команду ansible-galaxy init в папке roles/app
+- Скопируем в секцию tasks сценарий плейбука ansible/app.yml
+```yml
+ansible/roles/app/tasks/main.yml
+
+# tasks file for app
+- name: Add unit file for Puma
+  copy:
+    src: puma.service 
+    dest: /etc/systemd/system/puma.service
+  notify: reload puma
+
+- name: Add config for DB connection
+  template:
+      src: db_config.j2
+      dest: /home/appuser/db_config
+      owner: appuser
+      group: appuser
+- name: enable puma
+  systemd: name=puma enabled=yes
+```
+- Скопируем db_config.j2 из директории
+ansible/templates в директорию 
+ansible/roles/app/templates
+- Файлы ansible/files/puma.service в
+ansible/roles/app/files
+- Опишим хендлер соответствующий директории app
+```yml
+ansible/role/app/handlers/main.yml
+---
+# handlers file for app
+- name: reload puma
+  systemd: name=puma state=restarted
+```
+Также определим переменную по умолчанию подключения к MongoDB
+```yml
+ansible/role/app/defaults/main.yml  
+---
+# defaults file for app
+db_host: 127.0.0.1
+env: local
+```
+Удалим определение тасков и хендлеров в плейбуке ansible/app.yml
+```yml
+---
+- name: Configure App
+  hosts: app
+  become: true
+  vars:
+    db_host: 10.140.0.2
+  roles:
+    - app  
+ 
+```
+Пересоздадим окружение stage terraform
+```bash
+terraform destroy
+terraform apply --auto-approve=false
+```
+
+Запустим плейбуки
+```bash
+./d_invent.sh site.yml --check
+./d_invent.sh site.yml 
+```
+
+Проверим работу приложения
+`http://ip_address:9292`
+
+#### Окружение
+
+- Определим окружение по умолчанию
+```yml
+
+[defaults]
+inventory = ./environments/stage/inventory
+remote_user = appuser
+private_key_file = ~/.ssh/appuser
+host_key_checking = False
+```
+Ansible позволяет задавать  переменные для группы хостов.
+директория group_vars позволяет создавать файлы (имена, которых
+должны соответствовать названиям групп в инвентори файле) для
+определения переменных для группы хостов.
+- Создадим директорию group_vars в директориях наших
+окружений `nvironments/prod` и `environments/stage`.
+#### Конфигурация Stage
+- Зададим настройки окружения stage, используя групповые
+переменные:
+1. Создадим файлы `stage/group_vars/app` для определения
+переменных для группы хостов app, описанных в инвентори
+файле `stage/inventory`
+2. Скопируем в этот файл переменные, определенные в плейбуке
+`ansible/app.yml.`
+3. Также удалим определение переменных из самого плейбука
+`ansible/app.yml.`
+
+- Аналогичным образом определим переменные для группы
+хостов БД на окружении stage:
+
+1. Создадим файл `stage/group_vars/db` и скопируем в него
+содержимое переменные из плейбука `ansible/db.yml`
+2. Секцию определения переменных из самого плейбука
+`ansible/db.yml` удалим.
+
+- Создайте файл `ansible/environments/stage/group_vars/all`
+со следующим содержимым:
+```yml
+env: stage
+```
+#### Конфигурация Prod
+1. Для настройки окружения prod скопируйте файлы app, db, all из
+директории stage/group_vars в директорию prod/group_vars.
+2. В файле prod/group_vars/all измените значение env
+переменной на prod
+```yml
+env: prod
+```
+#### Вывод информации об окружении
+Для роли app в файле `ansible/roles/app/defaults/main.yml`:
+```yml
+---
+# defaults file for app
+db_host: 127.0.0.1
+env: local
+```
+
+Для роли db в файле `ansible/roles/db/defaults/main.yml`:
+```yml
+---
+# defaults file for db
+mongo_port: 27017
+mongo_bind_ip: 127.0.0.1
+env: local
+```
+
+#### Вывод информации об окружении
+Будем выводить информацию о том, в каком окружении
+находится конфигурируемый хост. Воспользуемся модулем debug
+для вывода значения переменной. Добавим следующий таск в
+начало наших ролей.
+- Для роли app (файл `ansible/roles/app/tasks/main.yml`):
+```yml
+---
+# tasks file for app
+- name: Show info about the env this host belongs to
+  debug:
+    msg: "This host is in {{ env }} environment!!!"
+```
+Добавим такой же таск в роль db (файл `ansible/roles/db/tasks/main.yml`)
+```yml
+---
+# tasks file for db
+- name: Show info about the env this host belongs to
+  debug: msg="This host is in {{ env }} environment!!!"
+```
+
+#### Улучшим файл ansible.cfg
+```cfg
+[defaults]
+inventory = ./environments/stage/inventory
+remote_user = appuser
+private_key_file = ~/.ssh/appuser
+host_key_checking = False
+retry_files_enabled = False
+roles_path = ./roles
+vault_password_file = ~/.ansible/vault.key
+[diff]
+always = True
+context = 5
+```
+#### Проверка работы с окружениями
+Для проверки пересоздадим инфраструктуру окружения stage,
+используя команды:
+```bash
+$ terraform destroy
+$ terraform apply -auto-approve=false
+```
+Теперь запустим Ansible...
+```bash
+$ ./d_invent.sh playbooks/site.yml --check
+$ ./d_invent.sh playbooks/site.yml
+```
+Проверим работу приложения
+`ip_address:9292`
+
+### Настройка Prod окружения
+
+Для проверки настройки prod окружения сначала удалим
+инфраструктуру окружения stage. Затем поднимем инфраструктуру
+для prod окружения.
+- Перед проверкой не забудьте изменить внешние IP-адреса
+инстансов в инвентори файле
+`ansible/environments/prod/inventory` и переменную
+`db_host` в `prod/group_vars/app`
+
+Если все сделано правильно, то получим примерно такой вывод
+команды ansible-playbook:
+```bash
+$ ansible-playbook -i environments/prod/inventory playbooks/site.yml --check
+$ ansible-playbook -i environments/prod/inventory playbooks/site.yml
+```
+Проверим работу приложения `ip_address:9292`
+
+#### Работа с Community-ролями
+Хорошей практикой является разделение зависимостей ролей
+(requirements.yml) по окружениям
+
+1. Создадим файлы environments/stage/requirements.yml и
+environments/prod/requirements.yml
+2. Добавим в них запись вида:
+```yml
+- src: jdauphant.nginx
+  version: v2.21.1
+```
+3. Установим роль
+```bash
+ansible-galaxy install -r environments/stage/requirements.yml
+```
+4. Комьюнити-роли не стоит коммитить в свой репозиторий, для
+этого добавим в .gitignore запись: jdauphant.nginx
+- для минимальной настройки проксирования
+необходимо добавить следующие переменные:
+```yml
+db_host: 10.140.0.2
+
+nginx_sites:
+  default:
+    - listen 80
+    - server_name "reddit"
+    - location / {
+         proxy_pass http://127.0.0.1:9292;
+      }
+```
+Добавим эти переменные в stage/group_vars/app и
+prod/group_vars/app
+
+- Самостоятельное задание
+- Добавить в конфигурацию Terraform открытие 80 порта для инстанса приложения.
+```tf
+
+
+resource "google_compute_firewall" "firewall_puma" {
+  name    = "allow-puma-default"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["9292","80"]
+  }
+source_ranges = ["0.0.0.0/0"]
+target_tags = ["reddit-app"]
+}
+```
+- Добавьте вызов роли jdauphant.nginx в плейбук app.yml
+```yml
+
+---
+- name: Configure App
+  hosts: app
+  become: true
+  vars:
+    db_host: ip_address
+  roles:
+    - app  
+    - jdauphant.nginx
+```
+- Применим  плейбук site.yml для окружения stage и проверям, что приложение доступно на 80 порту `ip_adderss` 
+
+#### Работа с Ansible Vault
+
+Подготовим плейбук для создания пользователей, пароль
+пользователей будем хранить в зашифрованном виде в файле
+credentials.yml:
+1. Создаим файл vault.key со произвольной строкой ключа
+в папке ~/.ansible/vault.key
+2. Изменим файл ansible.cfg, добавим опцию
+vault_password_file в секцию [defaults]
+```cfg
+[defaults]
+vault_password_file = ~/.ansible/vault.key
+```
+Добавим плейбук для создания пользователей - файл
+ansible/playbooks/users.yml
+```yml
+- name: Create users
+  hosts: all
+  become: true
+  vars_files:
+    - "{{ inventory_dir }}/credentials.yml"
+  tasks:
+    - name: create users
+      user:
+        name: "{{ item.key }}"
+        password: "{{ item.value.password|password_hash('sha512',
+ 65534|random(seed=inventory_hostname)|string) }}"
+        groups: "{{ item.value.groups | default(omit) }}"
+      with_dict: "{{ credentials.users }}"
+```
+Создадим файл с данными пользователей для каждого
+окружения
+- Файл для prod (ansible/environments/prod/credentials.yml):
+```yml
+
+credentials:
+        users:
+                admin:
+                        password: admin123
+                        groups: sudo
+```
+- Файл для stage (ansible/environments/stage/credentials.yml)
+```yml
+
+credentials:
+        users:
+                admin:
+                        password: qwerty123
+                        groups: sudo
+                        qauser:
+                                password: test123
+```
+1. Зашифруем файлы используя vault.key (используем
+одинаковый для всех окружений):
+```bash
+$ ansible-vault encrypt environments/prod/credentials.yml
+$ ansible-vault encrypt environments/stage/credentials.yml
+```
+2. Проверим содержимое файлов, убедитесь что они
+зашифрованы
+```yml
+
+$ANSIBLE_VAULT;1.1;AES256
+65373062643736386435363238626365363032303435653965353534646437653035383461346666
+6663303562323032616238356134346438343039323266360a646337653531343039303432666133
+39393530383264663839396435363763303965346464643363383132663761363564343265346463
+6531363733643131310a363931323030393931643632633162383238316137393937313166343630
+34313732613164636635616334373332623339313234393633633133663631306466623261323333
+33343766663461613238663833393962323937613139626334353764373062336438663139623230
+34386632353436653632383262333339396537633936633164323133626562633561633632663434
+39633930356664316332646461663736376234656630393136623933633437626132656234623738
+38303933663333643933363630313539393064646631663937323538346262613134316665313337
+32333837353230346331316439646538373632353737353339636664646165633731663838656661
+30323266623634363966656133626539373962646366356330356532373861636236623064616366
+30343139396163303562353161623336396630323139393932353039303336316561316533363137
+34636538326133316238366364356262613236303538336138643462343337323434383935636538
+66353430666461663833666535323936613232303234626637303138626632356136623730383466
+333135383063643161303434616637326430
+```
+3. Добавьте вызов плейбука в файл site.yml и выполните его
+для stage окружения:
+```
+---
+- import_playbook: db.yml
+- import_playbook: app.yml
+- import_playbook: deploy.yml
+- import_playbook: users.yml
+```
+- Проверим что пользователи созданы в системе.
+- Для проверки доступа по паролю изменим конфиг ssh
+```bash
+vi /etc/ssh/sshd_config
+
+PasswordAuthentication yes
+
+/etc/init.d/sshd restart
+```
+

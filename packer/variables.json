@@ -4,6 +4,7 @@
 	"machine_type": "f1-micro",
 	"network": "default",
 	"tags": "puma-server",
-	"disk_type": "pd-standart",
+	"disk_type": "pd-standard",
+	"disk_size": "10",
 	"image_description": "Canonical, Ubuntu, 16.04 LTS, amd64 xenial image"	
 }
