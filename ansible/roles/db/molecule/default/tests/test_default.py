@@ -17,6 +17,10 @@ def test_config_file(host):
     assert config_file.contains('bindIp: 0.0.0.0')
     assert config_file.is_file
 
+def test_socket_listen(host):
+    socket = host.socket("tcp://0.0.0.0:27017")
+    assert socket.is_listening
+
 #def test_hosts_file(host):
 #    f = host.file('/etc/hosts')
 
