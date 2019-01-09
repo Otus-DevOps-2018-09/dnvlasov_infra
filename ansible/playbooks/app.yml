@@ -5,4 +5,5 @@
   vars:
     db_host: 10.10.10.10
   roles:
-    - app  
+    - app
+    - jdauphant.nginx
