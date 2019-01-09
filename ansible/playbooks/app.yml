@@ -6,4 +6,3 @@
     db_host: 10.10.10.10
   roles:
     - app  
-    - jdauphant.nginx
