@@ -7,7 +7,7 @@ ubuntu16.json.bak
 .terraform/
 variables.tf
 main.tf.bak
-old
+*old
 *.retry
 jdauphant.nginx
 vault.key
