@@ -6,7 +6,6 @@
 	"networks": "variables.json",
         "tags": "variables.json",
         "disk_type": "variables.json",
-        "disk_size": "variables.json",
         "image_description": "variables.json"
 	},	
     "builders": [
@@ -22,7 +21,6 @@
 	   "network": "{{user `network`}}",
            "tags": "{{user `tags`}}",
            "disk_type": "{{user `disk_type`}}",
-           "disk_size": "{{user `disk_size`}}",
            "image_description": "{{user `image_descriprion`}}"
          }
       ],
